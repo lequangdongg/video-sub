@@ -128,6 +128,50 @@ def word_timings(audio: str, lang: str, model: str, on_progress=None):
 
 # ---------------------------------------------------------------- mux / burn
 
+def hex_to_ass(hexcolor: str, transparency: float = 0.0) -> str:
+    """#RRGGBB -> ASS &HAABBGGRR (AA: 00 opaque .. FF transparent)."""
+    h = hexcolor.lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    rr, gg, bb = h[0:2], h[2:4], h[4:6]
+    aa = max(0, min(255, round(transparency * 255)))
+    return f"&H{aa:02X}{bb.upper()}{gg.upper()}{rr.upper()}"
+
+
+_ALIGN = {"bottom": 2, "middle": 5, "top": 8}
+
+
+def build_force_style(style: dict | None) -> str:
+    """Build an ASS force_style string for the ffmpeg subtitles filter."""
+    if not style:
+        return ""
+    parts: list[str] = []
+    if style.get("font"):
+        parts.append(f"FontName={style['font']}")
+    if style.get("size"):
+        parts.append(f"FontSize={int(float(style['size']))}")
+    if style.get("bold"):
+        parts.append("Bold=-1")
+    if style.get("italic"):
+        parts.append("Italic=-1")
+    if style.get("fill"):
+        parts.append(f"PrimaryColour={hex_to_ass(style['fill'])}")
+    if style.get("outline") is not None and style.get("outline") != "":
+        parts.append(f"Outline={style['outline']}")
+    if style.get("outline_color"):
+        parts.append(f"OutlineColour={hex_to_ass(style['outline_color'])}")
+    if style.get("box"):
+        parts.append("BorderStyle=3")
+        if style.get("box_color"):
+            opacity = float(style.get("box_opacity", 1.0))
+            parts.append(f"BackColour={hex_to_ass(style['box_color'], 1.0 - opacity)}")
+    if style.get("align") in _ALIGN:
+        parts.append(f"Alignment={_ALIGN[style['align']]}")
+    if style.get("margin") not in (None, ""):
+        parts.append(f"MarginV={int(float(style['margin']))}")
+    return ",".join(parts)
+
+
 def _run_ffmpeg_progress(cmd: list[str], total: float, step: str, on_progress=None) -> None:
     proc = subprocess.Popen(cmd + ["-progress", "pipe:1", "-nostats"],
                             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
@@ -143,7 +187,8 @@ def _run_ffmpeg_progress(cmd: list[str], total: float, step: str, on_progress=No
         raise RuntimeError(f"ffmpeg thất bại ({step})")
 
 
-def burn_or_mux(video: str, srt: str, mode: str, out_path: str, on_progress=None) -> None:
+def burn_or_mux(video: str, srt: str, mode: str, out_path: str, on_progress=None,
+                style: dict | None = None) -> None:
     if mode == "srt":
         if os.path.abspath(srt) != os.path.abspath(out_path):
             shutil.copyfile(srt, out_path)
@@ -161,11 +206,15 @@ def burn_or_mux(video: str, srt: str, mode: str, out_path: str, on_progress=None
                 "ffmpeg không có libass nên không burn-in được. "
                 "Chạy ./install.sh hoặc chọn sub mềm.")
         esc = srt.replace("\\", "\\\\").replace("'", r"\'").replace(":", r"\:")
+        sub_opt = f"f='{esc}'"
+        fs = build_force_style(style)
+        if fs:
+            sub_opt += f":force_style='{fs}'"
         venc = (["-c:v", "h264_videotoolbox", "-q:v", VT_QUALITY]
                 if ENCODER == "hardware"
                 else ["-c:v", "libx264", "-crf", X264_CRF, "-preset", "medium"])
         cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", video,
-               "-vf", f"subtitles='{esc}'", *venc, "-c:a", "copy", out_path]
+               "-vf", f"subtitles={sub_opt}", *venc, "-c:a", "copy", out_path]
         _run_ffmpeg_progress(cmd, video_duration(video), "Nhúng phụ đề", on_progress)
         on_progress and on_progress("Nhúng phụ đề", 100.0)
         return
@@ -198,14 +247,14 @@ def process_auto(video: str, job_dir: str, opts: dict, on_progress=None) -> dict
     on_progress and on_progress("Tách audio", 100.0)
     transcribe(wav, lang, model, srt, on_progress)
     out = srt if mode == "srt" else _output_video_path(job_dir, video, mode)
-    burn_or_mux(video, srt, mode, out, on_progress)
+    burn_or_mux(video, srt, mode, out, on_progress, opts.get("style"))
     if os.path.exists(wav):
         os.remove(wav)
     return {"video": out, "srt": srt}
 
 
 def process_merge(video, sub_file, job_dir, offset, mode, on_progress=None,
-                  lang="vi", model="large-v3-turbo") -> dict:
+                  lang="vi", model="large-v3-turbo", style=None) -> dict:
     srt = os.path.join(job_dir, "output.srt")
     if sub_file.lower().endswith(TIMED_EXTS):
         on_progress and on_progress("Chuẩn bị sub", None)
@@ -227,5 +276,5 @@ def process_merge(video, sub_file, job_dir, offset, mode, on_progress=None,
         if os.path.exists(wav):
             os.remove(wav)
     out = srt if mode == "srt" else _output_video_path(job_dir, video, mode)
-    burn_or_mux(video, srt, mode, out, on_progress)
+    burn_or_mux(video, srt, mode, out, on_progress, style)
     return {"video": out, "srt": srt}

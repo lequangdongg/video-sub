@@ -29,6 +29,7 @@ if [[ "${SKIP_BATCH:-0}" != "1" && ${#PENDING[@]} -gt 0 ]]; then
 fi
 
 # 3) web server + mở trình duyệt
+lsof -ti tcp:"$PORT" 2>/dev/null | xargs kill 2>/dev/null || true
 echo "==> Mở http://localhost:$PORT"
 ( sleep 1; open "http://localhost:$PORT" ) >/dev/null 2>&1 &
 PORT="$PORT" .venv/bin/python -m webapp.server

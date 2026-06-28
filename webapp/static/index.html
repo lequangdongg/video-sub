@@ -118,6 +118,73 @@
       </section>
     </div>
 
+    <!-- subtitle styling (burn-in only) -->
+    <section class="card style-panel hidden" id="style-panel">
+      <div class="style-head"><span class="ttl">Kiểu chữ phụ đề · cháy vào hình</span><span class="ln"></span></div>
+      <div class="style-grid">
+        <div class="field">
+          <label>Font</label>
+          <select class="control" id="st-font">
+            <option value="">Mặc định</option>
+            <option>Arial</option>
+            <option>Helvetica Neue</option>
+            <option>Times New Roman</option>
+            <option>Tahoma</option>
+            <option>Verdana</option>
+            <option>Georgia</option>
+            <option>Courier New</option>
+            <option>Impact</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Cỡ chữ</label>
+          <input class="control" id="st-size" type="number" value="18" min="6" step="1">
+        </div>
+        <div class="field">
+          <label>Kiểu chữ</label>
+          <div class="toggles">
+            <button type="button" class="toggle" id="st-bold" aria-pressed="false" title="Đậm">B</button>
+            <button type="button" class="toggle i" id="st-italic" aria-pressed="false" title="Nghiêng">I</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Màu chữ</label>
+          <input class="swatch" id="st-fill" type="color" value="#ffffff">
+        </div>
+        <div class="field">
+          <label>Màu viền</label>
+          <input class="swatch" id="st-outline-color" type="color" value="#000000">
+        </div>
+        <div class="field">
+          <label>Độ dày viền</label>
+          <input class="control" id="st-outline" type="number" value="2" min="0" step="0.5">
+        </div>
+        <div class="field">
+          <label>Vị trí</label>
+          <select class="control" id="st-align">
+            <option value="bottom">Dưới</option>
+            <option value="middle">Giữa</option>
+            <option value="top">Trên</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Lề (margin)</label>
+          <input class="control" id="st-margin" type="number" value="24" min="0" step="1">
+        </div>
+        <div class="field">
+          <label>Nền chữ</label>
+          <div class="inline">
+            <button type="button" class="toggle" id="st-box" aria-pressed="false" title="Bật nền">Nền</button>
+            <input class="swatch" id="st-box-color" type="color" value="#000000" style="max-width:64px">
+          </div>
+        </div>
+        <div class="field">
+          <label>Độ mờ nền</label>
+          <input class="range" id="st-box-op" type="range" min="0" max="1" step="0.05" value="0.6">
+        </div>
+      </div>
+    </section>
+
     <!-- stage: progress / error / result -->
     <div class="stage hidden" id="stage">
       <div class="card">

@@ -70,6 +70,50 @@ def test_burn_soft_modes(sample_video, tmp_path):
         assert os.path.exists(burn) and os.path.getsize(burn) > 1000
 
 
+def test_hex_to_ass():
+    assert pipeline.hex_to_ass("#FFFFFF") == "&H00FFFFFF"
+    assert pipeline.hex_to_ass("#FF0000") == "&H000000FF"        # red -> BB GG RR
+    assert pipeline.hex_to_ass("#FFFF00") == "&H0000FFFF"        # yellow
+    assert pipeline.hex_to_ass("#000000", 0.5) == "&H80000000"   # 50% transparent
+
+
+def test_build_force_style_basic():
+    fs = pipeline.build_force_style({"font": "Arial", "size": 20, "bold": True, "fill": "#FFFF00"})
+    assert "FontName=Arial" in fs
+    assert "FontSize=20" in fs
+    assert "Bold=-1" in fs
+    assert "PrimaryColour=&H0000FFFF" in fs
+
+
+def test_build_force_style_box_align_outline():
+    fs = pipeline.build_force_style({
+        "box": True, "box_color": "#000000", "box_opacity": 1.0,
+        "align": "top", "outline": 3, "outline_color": "#000000"})
+    assert "BorderStyle=3" in fs
+    assert "BackColour=&H00000000" in fs
+    assert "Alignment=8" in fs
+    assert "Outline=3" in fs
+    assert "OutlineColour=&H00000000" in fs
+
+
+def test_build_force_style_empty():
+    assert pipeline.build_force_style(None) == ""
+    assert pipeline.build_force_style({}) == ""
+
+
+@needs_ffmpeg
+def test_burn_with_style(sample_video, tmp_path):
+    if not pipeline.have_libass():
+        return
+    srt = str(tmp_path / "s.srt")
+    write_srt([Cue(0.0, 1.5, "Xin chào")], srt)
+    out = str(tmp_path / "styled.mp4")
+    pipeline.burn_or_mux(sample_video, srt, "burn", out,
+                         style={"font": "Arial", "size": 22, "fill": "#FFFF00",
+                                "outline": 2, "outline_color": "#000000", "align": "bottom"})
+    assert os.path.exists(out) and os.path.getsize(out) > 1000
+
+
 @needs_ffmpeg
 def test_process_merge_timed_srt_offset(sample_video, tmp_path):
     sub = str(tmp_path / "in.srt")

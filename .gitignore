@@ -20,3 +20,6 @@ __pycache__/
 webapp/jobs/
 tests/fixtures/*.mp4
 tests/fixtures/*.wav
+
+# node / tailwind (app.css is a committed build artifact)
+node_modules/

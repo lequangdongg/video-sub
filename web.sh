@@ -12,6 +12,9 @@ if [[ ! -d .venv ]]; then
   .venv/bin/pip install --quiet -r requirements.txt
 fi
 
+# giải phóng cổng nếu còn server cũ đang chạy (tránh lỗi 404 do bản cũ)
+lsof -ti tcp:"$PORT" 2>/dev/null | xargs kill 2>/dev/null || true
+
 echo "==> Mở http://localhost:$PORT"
 ( sleep 1; open "http://localhost:$PORT" ) >/dev/null 2>&1 &
 PORT="$PORT" .venv/bin/python -m webapp.server

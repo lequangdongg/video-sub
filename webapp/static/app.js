@@ -12,8 +12,8 @@ function showTab(which) {
   $("tab-auto").setAttribute("aria-selected", which === "auto");
   $("tab-merge").setAttribute("aria-selected", which === "merge");
 }
-$("tab-auto").onclick = () => showTab("auto");
-$("tab-merge").onclick = () => showTab("merge");
+$("tab-auto").onclick = () => { showTab("auto"); updateStylePanel(); };
+$("tab-merge").onclick = () => { showTab("merge"); updateStylePanel(); };
 
 /* ---------------------------------------------------------------- video preview / monitor */
 function fmtTc(sec) {
@@ -140,6 +140,82 @@ function listen(jobId, btn) {
   es.onerror = () => es.close();
 }
 
+/* ---------------------------------------------------------------- subtitle style */
+function activeMode() { return (activeTab === "auto" ? $("auto-mode") : $("merge-mode")).value; }
+
+function updateStylePanel() {
+  $("style-panel").classList.toggle("hidden", activeMode() !== "burn");
+}
+
+function collectStyle() {
+  return {
+    font: $("st-font").value,
+    size: $("st-size").value,
+    bold: $("st-bold").getAttribute("aria-pressed") === "true",
+    italic: $("st-italic").getAttribute("aria-pressed") === "true",
+    fill: $("st-fill").value,
+    outline: $("st-outline").value,
+    outline_color: $("st-outline-color").value,
+    box: $("st-box").getAttribute("aria-pressed") === "true",
+    box_color: $("st-box-color").value,
+    box_opacity: $("st-box-op").value,
+    align: $("st-align").value,
+    margin: $("st-margin").value,
+  };
+}
+
+function appendStyle(fd) {
+  const s = collectStyle();
+  for (const [k, v] of Object.entries(s)) fd.append(k, typeof v === "boolean" ? (v ? "1" : "") : v);
+}
+
+function applyStylePreview() {
+  const s = collectStyle();
+  const cap = document.querySelector("#monitor .caption");
+  const span = cap.querySelector("span");
+  const mon = $("monitor");
+  const scale = (mon.clientHeight || 380) / 288; // ASS PlayResY default ~288
+  span.style.fontFamily = s.font ? `"${s.font}", sans-serif` : "var(--body)";
+  span.style.fontSize = Math.max(11, parseFloat(s.size || 18) * scale) + "px";
+  span.style.fontWeight = s.bold ? "800" : "600";
+  span.style.fontStyle = s.italic ? "italic" : "normal";
+  span.style.color = s.fill || "#fff";
+  const w = parseFloat(s.outline || 0) * scale * 0.5;
+  span.style.textShadow = w > 0
+    ? `-${w}px -${w}px 0 ${s.outline_color}, ${w}px -${w}px 0 ${s.outline_color}, -${w}px ${w}px 0 ${s.outline_color}, ${w}px ${w}px 0 ${s.outline_color}, 0 2px 6px rgba(0,0,0,.9)`
+    : "0 2px 6px rgba(0,0,0,.9)";
+  if (s.box) {
+    const op = parseFloat(s.box_opacity);
+    const c = s.box_color;
+    const r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
+    span.style.background = `rgba(${r},${g},${b},${op})`;
+    span.style.padding = "2px 8px";
+    span.style.boxDecorationBreak = "clone";
+    span.style.webkitBoxDecorationBreak = "clone";
+  } else {
+    span.style.background = "transparent";
+    span.style.padding = "0";
+  }
+  const m = parseFloat(s.margin || 0) * scale;
+  if (s.align === "top") { cap.style.top = m + "px"; cap.style.bottom = "auto"; cap.style.transform = "none"; }
+  else if (s.align === "middle") { cap.style.top = "50%"; cap.style.bottom = "auto"; cap.style.transform = "translateY(-50%)"; }
+  else { cap.style.bottom = m + "px"; cap.style.top = "auto"; cap.style.transform = "none"; }
+}
+
+// toggle buttons
+["st-bold", "st-italic", "st-box"].forEach((id) => {
+  $(id).addEventListener("click", () => {
+    const on = $(id).getAttribute("aria-pressed") === "true";
+    $(id).setAttribute("aria-pressed", String(!on));
+    applyStylePreview();
+  });
+});
+// live preview on any style change
+["st-font", "st-size", "st-fill", "st-outline", "st-outline-color", "st-align", "st-margin", "st-box-color", "st-box-op"]
+  .forEach((id) => $(id).addEventListener("input", applyStylePreview));
+// show/hide panel on mode change
+["auto-mode", "merge-mode"].forEach((id) => $(id).addEventListener("change", updateStylePanel));
+
 /* ---------------------------------------------------------------- actions */
 $("auto-start").onclick = () => {
   const f = $("auto-video").files[0];
@@ -149,6 +225,7 @@ $("auto-start").onclick = () => {
   fd.append("language", $("auto-lang").value);
   fd.append("model", $("auto-model").value);
   fd.append("mode", $("auto-mode").value);
+  if ($("auto-mode").value === "burn") appendStyle(fd);
   submit("/api/auto", fd, $("auto-start"));
 };
 
@@ -160,8 +237,12 @@ $("merge-start").onclick = () => {
   fd.append("video", v); fd.append("sub", s);
   fd.append("offset", $("merge-offset").value || "0");
   fd.append("mode", $("merge-mode").value);
+  if ($("merge-mode").value === "burn") appendStyle(fd);
   submit("/api/merge", fd, $("merge-start"));
 };
+
+updateStylePanel();
+applyStylePreview();
 
 $("clear-job").onclick = async () => {
   if (currentJob) {

@@ -23,6 +23,29 @@ def create_app(jobs_root: str | None = None) -> Flask:
 
     from webapp import pipeline
 
+    def _truthy(v):
+        return str(v).lower() in ("1", "true", "on", "yes")
+
+    def _style_from_form(form):
+        """Collect subtitle styling fields (only meaningful for burn mode)."""
+        style = {
+            "font": form.get("font") or None,
+            "size": form.get("size") or None,
+            "bold": _truthy(form.get("bold")),
+            "italic": _truthy(form.get("italic")),
+            "fill": form.get("fill") or None,
+            "outline": form.get("outline") or None,
+            "outline_color": form.get("outline_color") or None,
+            "box": _truthy(form.get("box")),
+            "box_color": form.get("box_color") or None,
+            "box_opacity": form.get("box_opacity") or None,
+            "align": form.get("align") or None,
+            "margin": form.get("margin") or None,
+        }
+        # drop if nothing useful set
+        return style if any(v for k, v in style.items() if k not in ("bold", "italic", "box")) \
+            or style["bold"] or style["italic"] or style["box"] else None
+
     def _reject_if_busy():
         with _LOCK:
             if _STATE["busy"]:
@@ -74,6 +97,7 @@ def create_app(jobs_root: str | None = None) -> Flask:
             "language": request.form.get("language", "vi"),
             "model": request.form.get("model", "large-v3-turbo"),
             "mode": request.form.get("mode", "burn"),
+            "style": _style_from_form(request.form) if request.form.get("mode") == "burn" else None,
         }
         d = _job_dir(uuid.uuid4().hex[:12])
         vf = request.files["video"]
@@ -101,6 +125,7 @@ def create_app(jobs_root: str | None = None) -> Flask:
         mode = request.form.get("mode", "burn")
         lang = request.form.get("language", "vi")
         model = request.form.get("model", "large-v3-turbo")
+        style = _style_from_form(request.form) if mode == "burn" else None
         d = _job_dir(uuid.uuid4().hex[:12])
         vf = request.files["video"]
         sf = request.files["sub"]
@@ -111,7 +136,7 @@ def create_app(jobs_root: str | None = None) -> Flask:
 
         def work(on_progress):
             return pipeline.process_merge(vpath, spath, d, offset, mode,
-                                          on_progress, lang, model)
+                                          on_progress, lang, model, style)
 
         job_id = _start_job(work)
         _JOBS[job_id]["dir"] = d

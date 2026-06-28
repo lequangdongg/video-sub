@@ -106,8 +106,23 @@ Hai phần tốn thời gian, tăng tốc khác nhau:
 - **Tab "Ghép sub có sẵn":** upload video + file sub. Sub có timeline (`.srt`/`.vtt`/`.ass`) thì
   dời theo ô "Bắt đầu sub từ giây thứ"; sub là **văn bản thuần** (`.txt`/`.docx`, không timeline)
   thì whisper nghe video rồi **tự căn** văn bản vào timeline. Chọn kiểu sub cứng/mềm.
+- Khi chọn **"Cháy vào hình"**, có panel **Kiểu chữ phụ đề**: font, cỡ chữ, đậm/nghiêng,
+  màu chữ, màu + độ dày viền, vị trí (trên/giữa/dưới), lề, nền chữ + độ mờ — xem trước ngay
+  trên khung preview. (Áp dụng cho burn-in; ánh xạ sang `force_style` của libass.)
 - Sau khi xong, nút **"🗑 Xoá & làm video khác"** xoá video đã upload + kết quả của job đó.
 - Lần đầu `web.sh`/`start.sh` tự tạo venv và cài Flask (thuần Python, không đụng PyTorch).
+- `web.sh`/`start.sh` tự giải phóng cổng nếu còn bản cũ đang chạy (tránh lỗi 404 do server cũ).
+
+### Sửa giao diện (Tailwind qua npm)
+
+CSS được **Tailwind quản lý** (không dùng CDN). Nguồn: `webapp/styles/input.css` →
+build ra `webapp/static/app.css` (đã commit sẵn nên chạy app không cần Node).
+
+```bash
+npm install            # lần đầu
+npm run build:css      # build lại sau khi sửa style
+npm run watch:css      # tự build khi đang chỉnh
+```
 
 ## Dọn dẹp
 
