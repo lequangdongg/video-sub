@@ -174,13 +174,24 @@ def create_app(jobs_root: str | None = None) -> Flask:
 
         def stream():
             q = job["queue"]
+            # padding 2KB + retry: vượt ngưỡng đệm của proxy/antivirus, mở kết nối ngay
+            yield ":" + (" " * 2048) + "\n\n"
+            yield "retry: 3000\n\n"
             while True:
-                evt = q.get()
+                try:
+                    evt = q.get(timeout=15)
+                except queue.Empty:
+                    yield ": ping\n\n"      # heartbeat: giữ kết nối, chống bị đệm/đứt
+                    continue
                 if evt is None:
                     break
                 yield f"data: {json.dumps(evt, ensure_ascii=False)}\n\n"
 
-        return Response(stream(), mimetype="text/event-stream")
+        return Response(stream(), mimetype="text/event-stream", headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",      # tắt đệm (nginx/cloudflared)
+            "Connection": "keep-alive",
+        })
 
     @app.get("/api/jobs/<job_id>/download/<kind>")
     def api_download(job_id, kind):
