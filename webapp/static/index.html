@@ -3,165 +3,147 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Auto Sub</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Auto Sub — phụ đề tiếng Việt cho video</title>
+  <meta name="description" content="Auto Sub — tạo và ghép phụ đề tiếng Việt cho video, chạy cục bộ bằng Whisper + FFmpeg.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen">
-  <div class="max-w-2xl mx-auto p-6">
-    <h1 class="text-2xl font-bold mb-4">🎬 Auto Sub — Tạo phụ đề tự động</h1>
+<body>
+  <div class="wrap">
+    <header class="brand">
+      <div class="cc">CC</div>
+      <div>
+        <h1>Auto Sub</h1>
+        <div class="sub">Phụ đề tiếng Việt · Whisper + FFmpeg</div>
+      </div>
+    </header>
 
-    <div class="flex gap-2 mb-4">
-      <button id="tab-auto" class="px-4 py-2 rounded-t bg-white font-semibold border-b-2 border-blue-500">Tự động tạo sub</button>
-      <button id="tab-merge" class="px-4 py-2 rounded-t bg-slate-200">Ghép sub có sẵn</button>
+    <!-- signature: preview monitor + burned-in caption -->
+    <div class="monitor" id="monitor" role="button" tabindex="0" aria-label="Chọn hoặc kéo thả video vào khung">
+      <video id="preview" muted playsinline></video>
+      <div class="scrim"></div>
+      <div class="mon-top">
+        <span class="chip"><span class="dot-rec"></span><span id="vname">AUTOSUB · PREVIEW</span></span>
+        <span class="tc" id="tc">00:00:00,000</span>
+      </div>
+      <div class="prompt">
+        <span class="glyph">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0L8 8m4-4l4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        </span>
+        <b>Kéo &amp; thả video vào đây</b>
+        <span>hoặc bấm để chọn file · MP4, MOV, MKV…</span>
+      </div>
+      <div class="wave" id="wave"></div>
+      <div class="caption"><span><span class="who">▸ </span>Phụ đề của bạn sẽ hiển thị như thế này</span></div>
     </div>
 
-    <!-- TAB 1 -->
-    <section id="panel-auto" class="bg-white rounded-b rounded-tr shadow p-5 space-y-4">
-      <input type="file" id="auto-video" accept="video/*" class="block w-full text-sm">
-      <div class="grid grid-cols-3 gap-3 text-sm">
-        <label>Ngôn ngữ
-          <select id="auto-lang" class="mt-1 w-full border rounded p-1">
-            <option value="vi">Tiếng Việt</option><option value="en">English</option><option value="auto">Tự nhận</option>
-          </select></label>
-        <label>Model
-          <select id="auto-model" class="mt-1 w-full border rounded p-1">
-            <option value="large-v3-turbo">turbo</option><option value="medium">medium</option><option value="small">small</option>
-          </select></label>
-        <label>Kiểu sub
-          <select id="auto-mode" class="mt-1 w-full border rounded p-1">
-            <option value="burn">Cứng</option><option value="soft">Mềm</option><option value="srt">Chỉ .srt</option>
-          </select></label>
-      </div>
-      <button id="auto-start" class="w-full bg-blue-600 text-white rounded py-2 font-semibold disabled:opacity-50">Bắt đầu tạo phụ đề</button>
-    </section>
+    <input id="auto-video" type="file" accept="video/*" hidden>
+    <input id="merge-video" type="file" accept="video/*" hidden>
 
-    <!-- TAB 2 -->
-    <section id="panel-merge" class="hidden bg-white rounded-b rounded-tr shadow p-5 space-y-4">
-      <div class="grid grid-cols-2 gap-3 text-sm">
-        <label>Video<input type="file" id="merge-video" accept="video/*" class="mt-1 block w-full"></label>
-        <label>File sub (.srt/.vtt/.ass/.txt/.docx)<input type="file" id="merge-sub" accept=".srt,.vtt,.ass,.txt,.docx" class="mt-1 block w-full"></label>
-      </div>
-      <div class="grid grid-cols-2 gap-3 text-sm">
-        <label>Bắt đầu sub từ giây thứ
-          <input type="number" id="merge-offset" value="0" step="0.1" class="mt-1 w-full border rounded p-1"></label>
-        <label>Kiểu ghép
-          <select id="merge-mode" class="mt-1 w-full border rounded p-1">
-            <option value="burn">Cứng</option><option value="soft">Mềm</option><option value="srt">Chỉ .srt</option>
-          </select></label>
-      </div>
-      <button id="merge-start" class="w-full bg-blue-600 text-white rounded py-2 font-semibold disabled:opacity-50">Ghép phụ đề vào video</button>
-    </section>
+    <!-- tabs -->
+    <div class="tabs" role="tablist" aria-label="Chế độ">
+      <button class="tab" id="tab-auto" role="tab" aria-selected="true">Tự động tạo sub</button>
+      <button class="tab" id="tab-merge" role="tab" aria-selected="false">Ghép sub có sẵn</button>
+    </div>
 
-    <!-- PROGRESS / RESULT -->
-    <section id="progress" class="hidden bg-white rounded shadow p-5 mt-4">
-      <div id="steps" class="space-y-2 text-sm"></div>
-      <div id="error" class="hidden mt-3 p-3 rounded bg-red-100 text-red-700 text-sm"></div>
-      <div id="result" class="hidden mt-4 flex flex-wrap gap-3">
-        <a id="dl-video" class="bg-green-600 text-white rounded px-4 py-2 text-sm">⬇ Tải video có sub</a>
-        <a id="dl-srt" class="bg-slate-600 text-white rounded px-4 py-2 text-sm">⬇ Tải .srt</a>
-        <button id="clear-job" class="bg-red-600 text-white rounded px-4 py-2 text-sm">🗑 Xoá & làm video khác</button>
+    <div class="card">
+      <!-- TAB 1 -->
+      <section class="panel" id="panel-auto" role="tabpanel" aria-labelledby="tab-auto">
+        <p class="hint">Whisper nghe video và tạo phụ đề tự động. Chọn video ở khung phía trên.</p>
+        <div class="row cols-3">
+          <div class="field">
+            <label>Ngôn ngữ nói</label>
+            <select class="control" id="auto-lang">
+              <option value="vi">Tiếng Việt</option>
+              <option value="en">English</option>
+              <option value="auto">Tự nhận diện</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Model</label>
+            <select class="control" id="auto-model">
+              <option value="large-v3-turbo">turbo · chính xác</option>
+              <option value="medium">medium</option>
+              <option value="small">small · nhanh</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Kiểu phụ đề</label>
+            <select class="control" id="auto-mode">
+              <option value="burn">Cháy vào hình</option>
+              <option value="soft">Bật/tắt được</option>
+              <option value="srt">Chỉ file .srt</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" id="auto-start">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3l1.5 3.5L10 8 6.5 9.5 5 13 3.5 9.5 0 8l3.5-1.5z" transform="translate(4 2)"/><path d="M18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></svg>
+          Tạo phụ đề
+        </button>
+      </section>
+
+      <!-- TAB 2 -->
+      <section class="panel hidden" id="panel-merge" role="tabpanel" aria-labelledby="tab-merge">
+        <p class="hint">Ghép file phụ đề của bạn vào video ở khung trên. <b>.srt/.vtt/.ass</b> giữ nguyên thời gian; <b>.txt/.docx</b> (không có thời gian) sẽ được căn theo lời nói trong video.</p>
+        <label class="filepick" id="pick-merge-sub" data-placeholder="Chưa chọn file phụ đề">
+          <span class="ic">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+          </span>
+          <span class="txt"><b>File phụ đề</b><small class="name">Chưa chọn file phụ đề</small></span>
+          <input id="merge-sub" type="file" accept=".srt,.vtt,.ass,.txt,.docx">
+        </label>
+        <div class="row cols-2">
+          <div class="field">
+            <label>Bắt đầu sub từ giây thứ</label>
+            <div class="with-unit">
+              <input class="control" id="merge-offset" type="number" value="0" step="0.1">
+              <span class="unit">giây</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Kiểu ghép</label>
+            <select class="control" id="merge-mode">
+              <option value="burn">Cháy vào hình</option>
+              <option value="soft">Bật/tắt được</option>
+              <option value="srt">Chỉ file .srt</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn" id="merge-start">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v6a5 5 0 0 0 5 5h7"/><path d="M16 11l4 4-4 4"/></svg>
+          Ghép phụ đề
+        </button>
+      </section>
+    </div>
+
+    <!-- stage: progress / error / result -->
+    <div class="stage hidden" id="stage">
+      <div class="card">
+        <div class="timeline" id="steps"></div>
+        <div class="error hidden" id="error">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          <span></span>
+        </div>
+        <div class="result hidden" id="result">
+          <div class="done-tag"><span class="d"></span>Hoàn tất</div>
+          <a class="dl primary" id="dl-video">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M5 21h14"/></svg>
+            Tải video có sub
+          </a>
+          <a class="dl ghost" id="dl-srt">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M5 21h14"/></svg>
+            Tải .srt
+          </a>
+          <button class="dl trash" id="clear-job">Xoá &amp; làm video khác</button>
+        </div>
       </div>
-    </section>
+    </div>
+
+    <div class="footer">CHẠY CỤC BỘ TRÊN MÁY BẠN · KHÔNG GỬI DỮ LIỆU LÊN ĐÁM MÂY</div>
   </div>
 
-  <script>
-    const $ = (id) => document.getElementById(id);
-    let currentJob = null;
-    function showTab(which) {
-      $("panel-auto").classList.toggle("hidden", which !== "auto");
-      $("panel-merge").classList.toggle("hidden", which !== "merge");
-      $("tab-auto").className = which === "auto"
-        ? "px-4 py-2 rounded-t bg-white font-semibold border-b-2 border-blue-500"
-        : "px-4 py-2 rounded-t bg-slate-200";
-      $("tab-merge").className = which === "merge"
-        ? "px-4 py-2 rounded-t bg-white font-semibold border-b-2 border-blue-500"
-        : "px-4 py-2 rounded-t bg-slate-200";
-    }
-    $("tab-auto").onclick = () => showTab("auto");
-    $("tab-merge").onclick = () => showTab("merge");
-
-    const stepState = {};
-    function renderSteps() {
-      $("steps").innerHTML = Object.entries(stepState).map(([name, s]) => {
-        const icon = s.done ? "✓" : "⟳";
-        const pct = (s.percent != null && !s.done) ? ` ${Math.round(s.percent)}%` : "";
-        return `<div>${icon} ${name}${pct}</div>`;
-      }).join("");
-    }
-    function resetUI() {
-      for (const k in stepState) delete stepState[k];
-      $("progress").classList.remove("hidden");
-      $("error").classList.add("hidden");
-      $("result").classList.add("hidden");
-      renderSteps();
-    }
-    function showError(msg) { const e = $("error"); e.textContent = "⚠ " + msg; e.classList.remove("hidden"); }
-
-    async function submit(url, form, buttons) {
-      buttons.forEach(b => b.disabled = true);
-      resetUI();
-      let res;
-      try { res = await fetch(url, { method: "POST", body: form }); }
-      catch (e) { showError("Không gửi được yêu cầu."); buttons.forEach(b => b.disabled = false); return; }
-      if (res.status === 409) { showError("Đang xử lý video khác, vui lòng đợi."); buttons.forEach(b => b.disabled = false); return; }
-      if (!res.ok) { const j = await res.json().catch(() => ({})); showError(j.error || "Lỗi gửi yêu cầu."); buttons.forEach(b => b.disabled = false); return; }
-      const { job_id } = await res.json();
-      listen(job_id, buttons);
-    }
-
-    function listen(jobId, buttons) {
-      currentJob = jobId;
-      const es = new EventSource(`/api/jobs/${jobId}/events`);
-      es.onmessage = (ev) => {
-        const m = JSON.parse(ev.data);
-        if (m.type === "progress") {
-          for (const k in stepState) if (k !== m.step) stepState[k].done = true;
-          stepState[m.step] = { percent: m.percent, done: m.percent === 100 };
-          renderSteps();
-        } else if (m.type === "done") {
-          for (const k in stepState) stepState[k].done = true;
-          renderSteps();
-          $("dl-video").href = `/api/jobs/${jobId}/download/video`;
-          $("dl-srt").href = `/api/jobs/${jobId}/download/srt`;
-          $("result").classList.remove("hidden");
-          es.close(); buttons.forEach(b => b.disabled = false);
-        } else if (m.type === "error") {
-          showError(m.message); es.close(); buttons.forEach(b => b.disabled = false);
-        }
-      };
-      es.onerror = () => es.close();
-    }
-
-    $("auto-start").onclick = () => {
-      const f = $("auto-video").files[0];
-      if (!f) return showError("Chọn video trước.");
-      const fd = new FormData();
-      fd.append("video", f);
-      fd.append("language", $("auto-lang").value);
-      fd.append("model", $("auto-model").value);
-      fd.append("mode", $("auto-mode").value);
-      submit("/api/auto", fd, [$("auto-start")]);
-    };
-    $("clear-job").onclick = async () => {
-      if (currentJob) {
-        try { await fetch(`/api/jobs/${currentJob}/delete`, { method: "POST" }); } catch (e) {}
-        currentJob = null;
-      }
-      $("progress").classList.add("hidden");
-      $("auto-video").value = "";
-      $("merge-video").value = "";
-      $("merge-sub").value = "";
-    };
-
-    $("merge-start").onclick = () => {
-      const v = $("merge-video").files[0], s = $("merge-sub").files[0];
-      if (!v || !s) return showError("Chọn cả video và file sub.");
-      const fd = new FormData();
-      fd.append("video", v); fd.append("sub", s);
-      fd.append("offset", $("merge-offset").value || "0");
-      fd.append("mode", $("merge-mode").value);
-      submit("/api/merge", fd, [$("merge-start")]);
-    };
-  </script>
+  <script src="/static/app.js"></script>
 </body>
 </html>

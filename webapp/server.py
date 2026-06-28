@@ -16,7 +16,7 @@ _LOCK = threading.Lock()
 
 
 def create_app(jobs_root: str | None = None) -> Flask:
-    app = Flask(__name__, static_folder=None)
+    app = Flask(__name__, static_folder="static", static_url_path="/static")
     here = os.path.dirname(__file__)
     app.config["JOBS_ROOT"] = jobs_root or os.path.join(here, "jobs")
     os.makedirs(app.config["JOBS_ROOT"], exist_ok=True)
