@@ -4,6 +4,15 @@
 @source "../static/index.html";
 @source "../static/app.js";
 
+/* font Việt đi kèm repo — cho phần xem trước trên trình duyệt */
+@font-face {
+  font-family: "UTM Avo";
+  src: url("/static/fonts/UTM-Avo.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* ---------------------------------------------------------------- design tokens */
 :root {
   --bg:        #0c1120;

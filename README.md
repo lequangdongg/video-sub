@@ -109,6 +109,9 @@ Hai phần tốn thời gian, tăng tốc khác nhau:
 - Khi chọn **"Cháy vào hình"**, có panel **Kiểu chữ phụ đề**: font, cỡ chữ, đậm/nghiêng,
   màu chữ, màu + độ dày viền, vị trí (trên/giữa/dưới), lề, nền chữ + độ mờ — xem trước ngay
   trên khung preview. (Áp dụng cho burn-in; ánh xạ sang `force_style` của libass.)
+- Font **UTM Avo** (Việt) đi kèm sẵn trong repo tại `assets/fonts/` và là lựa chọn mặc định.
+  ffmpeg dùng font này qua `fontsdir` — **không cài vào máy**, chỉ dùng riêng cho repo này.
+  Thả thêm file `.ttf`/`.otf` vào `assets/fonts/` là libass tự nhận (gõ tên font vào ô Font).
 - Sau khi xong, nút **"🗑 Xoá & làm video khác"** xoá video đã upload + kết quả của job đó.
 - Lần đầu `web.sh`/`start.sh` tự tạo venv và cài Flask (thuần Python, không đụng PyTorch).
 - `web.sh`/`start.sh` tự giải phóng cổng nếu còn bản cũ đang chạy (tránh lỗi 404 do server cũ).

@@ -9,6 +9,8 @@ import subprocess
 from webapp import subtitles
 
 MODELS_DIR = os.environ.get("WHISPER_MODELS_DIR", os.path.expanduser("~/whisper-models"))
+# fonts bundled in the repo (scoped to this project, not installed system-wide)
+FONTS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "fonts")
 THREADS = os.environ.get("WHISPER_THREADS", "8")
 ENCODER = os.environ.get("ENCODER", "hardware")      # hardware|software
 VT_QUALITY = os.environ.get("VT_QUALITY", "60")
@@ -205,11 +207,15 @@ def burn_or_mux(video: str, srt: str, mode: str, out_path: str, on_progress=None
             raise RuntimeError(
                 "ffmpeg không có libass nên không burn-in được. "
                 "Chạy ./install.sh hoặc chọn sub mềm.")
-        esc = srt.replace("\\", "\\\\").replace("'", r"\'").replace(":", r"\:")
-        sub_opt = f"f='{esc}'"
+        def _escfilt(p):
+            return p.replace("\\", "\\\\").replace("'", r"\'").replace(":", r"\:")
+        sub_opt = f"f='{_escfilt(srt)}'"
         fs = build_force_style(style)
         if fs:
             sub_opt += f":force_style='{fs}'"
+        # dùng font đi kèm repo (không cần cài vào máy)
+        if os.path.isdir(FONTS_DIR):
+            sub_opt += f":fontsdir='{_escfilt(FONTS_DIR)}'"
         venc = (["-c:v", "h264_videotoolbox", "-q:v", VT_QUALITY]
                 if ENCODER == "hardware"
                 else ["-c:v", "libx264", "-crf", X264_CRF, "-preset", "medium"])
