@@ -79,17 +79,21 @@ def create_app(jobs_root: str | None = None) -> Flask:
     def _start_job(work):
         job_id = uuid.uuid4().hex[:12]
         q: queue.Queue = queue.Queue()
-        _JOBS[job_id] = {"queue": q, "result": None, "error": None}
+        _JOBS[job_id] = {"queue": q, "result": None, "error": None,
+                         "steps": {}, "status": "running"}
 
         def on_progress(step, percent):
-            q.put({"type": "progress", "step": step, "percent": percent})
+            _JOBS[job_id]["steps"][step] = percent          # cho polling /status
+            q.put({"type": "progress", "step": step, "percent": percent})  # cho SSE (tuỳ chọn)
 
         def run():
             try:
                 _JOBS[job_id]["result"] = work(on_progress)
+                _JOBS[job_id]["status"] = "done"
                 q.put({"type": "done"})
             except Exception as e:
                 _JOBS[job_id]["error"] = str(e)
+                _JOBS[job_id]["status"] = "error"
                 q.put({"type": "error", "message": str(e)})
             finally:
                 q.put(None)
@@ -165,6 +169,15 @@ def create_app(jobs_root: str | None = None) -> Flask:
         job_id = _start_job(work)
         _JOBS[job_id]["dir"] = d
         return jsonify(job_id=job_id), 202
+
+    @app.get("/api/jobs/<job_id>/status")
+    def api_status(job_id):
+        job = _JOBS.get(job_id)
+        if not job:
+            return jsonify(error="job không tồn tại"), 404
+        return jsonify(status=job.get("status", "running"),
+                       steps=job.get("steps", {}),
+                       error=job.get("error"))
 
     @app.get("/api/jobs/<job_id>/events")
     def api_events(job_id):

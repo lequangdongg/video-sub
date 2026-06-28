@@ -3,6 +3,7 @@ const $ = (id) => document.getElementById(id);
 
 let activeTab = "auto";
 let currentJob = null;
+let pollTimer = null;
 
 /* ---------------------------------------------------------------- tabs */
 function showTab(which) {
@@ -117,27 +118,47 @@ async function submit(url, form, btn) {
   listen(job_id, btn);
 }
 
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+function applyStatus(m, jobId, btn) {
+  const steps = m.steps || {};
+  const idxs = Object.keys(steps).map((s) => STEP_ORDER.indexOf(s));
+  const maxIdx = idxs.length ? Math.max(...idxs) : -1;
+  for (const [step, percent] of Object.entries(steps)) {
+    const isLast = STEP_ORDER.indexOf(step) === maxIdx;
+    stepState[step] = { percent, done: percent === 100 || !isLast };
+  }
+  renderSteps();
+  if (m.status === "done") {
+    for (const k in stepState) stepState[k].done = true;
+    renderSteps();
+    $("dl-video").href = `/api/jobs/${jobId}/download/video`;
+    $("dl-srt").href = `/api/jobs/${jobId}/download/srt`;
+    $("result").classList.remove("hidden");
+    stopPolling(); btn.disabled = false;
+  } else if (m.status === "error") {
+    showError(m.error || "Có lỗi khi xử lý video.");
+    stopPolling(); btn.disabled = false;
+  }
+}
+
+// Polling thay cho SSE: bền với mạng/đệm/antivirus khi máy khác truy cập
 function listen(jobId, btn) {
   currentJob = jobId;
-  const es = new EventSource(`/api/jobs/${jobId}/events`);
-  es.onmessage = (ev) => {
-    const m = JSON.parse(ev.data);
-    if (m.type === "progress") {
-      for (const k in stepState) if (k !== m.step) stepState[k].done = true;
-      stepState[m.step] = { percent: m.percent, done: m.percent === 100 };
-      renderSteps();
-    } else if (m.type === "done") {
-      for (const k in stepState) stepState[k].done = true;
-      renderSteps();
-      $("dl-video").href = `/api/jobs/${jobId}/download/video`;
-      $("dl-srt").href = `/api/jobs/${jobId}/download/srt`;
-      $("result").classList.remove("hidden");
-      es.close(); btn.disabled = false;
-    } else if (m.type === "error") {
-      showError(m.message); es.close(); btn.disabled = false;
-    }
+  stopPolling();
+  const poll = async () => {
+    let m;
+    try {
+      const r = await fetch(`/api/jobs/${jobId}/status`, { cache: "no-store" });
+      if (!r.ok) return;          // 404/khác -> thử lại nhịp sau
+      m = await r.json();
+    } catch (e) { return; }       // mạng chập chờn -> thử lại nhịp sau
+    applyStatus(m, jobId, btn);
   };
-  es.onerror = () => es.close();
+  pollTimer = setInterval(poll, 1000);
+  poll();
 }
 
 /* ---------------------------------------------------------------- subtitle style */
@@ -250,6 +271,7 @@ updateStylePanel();
 applyStylePreview();
 
 $("clear-job").onclick = async () => {
+  stopPolling();
   if (currentJob) {
     try { await fetch(`/api/jobs/${currentJob}/delete`, { method: "POST" }); } catch (e) {}
     currentJob = null;

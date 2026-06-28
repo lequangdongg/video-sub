@@ -86,6 +86,31 @@ def test_events_stream_and_download(client, monkeypatch):
     assert b"00:00:00,000" in d.data
 
 
+def test_status_polling_reports_done(client, monkeypatch):
+    import time
+    from webapp import pipeline
+
+    def fake_auto(video, job_dir, opts, on_progress=None):
+        on_progress("Tách audio", 100.0)
+        srt = video + ".srt"
+        open(srt, "w").write("1\n00:00:00,000 --> 00:00:01,000\nhi\n")
+        return {"video": video, "srt": srt}
+
+    monkeypatch.setattr(pipeline, "process_auto", fake_auto)
+    data = {"mode": "srt", "video": (io.BytesIO(b"x"), "c.mp4")}
+    jid = client.post("/api/auto", data=data,
+                      content_type="multipart/form-data").get_json()["job_id"]
+    s = {"status": "running"}
+    for _ in range(60):
+        s = client.get(f"/api/jobs/{jid}/status").get_json()
+        if s["status"] != "running":
+            break
+        time.sleep(0.05)
+    assert s["status"] == "done"
+    assert s["steps"].get("Tách audio") == 100.0
+    assert client.get("/api/jobs/nope/status").status_code == 404
+
+
 def test_delete_job_removes_dir(client, monkeypatch):
     from webapp import pipeline, server
 
