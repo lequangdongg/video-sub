@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Auto Sub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+  <div class="max-w-2xl mx-auto p-6">
+    <h1 class="text-2xl font-bold mb-4">🎬 Auto Sub — Tạo phụ đề tự động</h1>
+
+    <div class="flex gap-2 mb-4">
+      <button id="tab-auto" class="px-4 py-2 rounded-t bg-white font-semibold border-b-2 border-blue-500">Tự động tạo sub</button>
+      <button id="tab-merge" class="px-4 py-2 rounded-t bg-slate-200">Ghép sub có sẵn</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <section id="panel-auto" class="bg-white rounded-b rounded-tr shadow p-5 space-y-4">
+      <input type="file" id="auto-video" accept="video/*" class="block w-full text-sm">
+      <div class="grid grid-cols-3 gap-3 text-sm">
+        <label>Ngôn ngữ
+          <select id="auto-lang" class="mt-1 w-full border rounded p-1">
+            <option value="vi">Tiếng Việt</option><option value="en">English</option><option value="auto">Tự nhận</option>
+          </select></label>
+        <label>Model
+          <select id="auto-model" class="mt-1 w-full border rounded p-1">
+            <option value="large-v3-turbo">turbo</option><option value="medium">medium</option><option value="small">small</option>
+          </select></label>
+        <label>Kiểu sub
+          <select id="auto-mode" class="mt-1 w-full border rounded p-1">
+            <option value="burn">Cứng</option><option value="soft">Mềm</option><option value="srt">Chỉ .srt</option>
+          </select></label>
+      </div>
+      <button id="auto-start" class="w-full bg-blue-600 text-white rounded py-2 font-semibold disabled:opacity-50">Bắt đầu tạo phụ đề</button>
+    </section>
+
+    <!-- TAB 2 -->
+    <section id="panel-merge" class="hidden bg-white rounded-b rounded-tr shadow p-5 space-y-4">
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <label>Video<input type="file" id="merge-video" accept="video/*" class="mt-1 block w-full"></label>
+        <label>File sub (.srt/.vtt/.ass/.txt/.docx)<input type="file" id="merge-sub" accept=".srt,.vtt,.ass,.txt,.docx" class="mt-1 block w-full"></label>
+      </div>
+      <div class="grid grid-cols-2 gap-3 text-sm">
+        <label>Bắt đầu sub từ giây thứ
+          <input type="number" id="merge-offset" value="0" step="0.1" class="mt-1 w-full border rounded p-1"></label>
+        <label>Kiểu ghép
+          <select id="merge-mode" class="mt-1 w-full border rounded p-1">
+            <option value="burn">Cứng</option><option value="soft">Mềm</option><option value="srt">Chỉ .srt</option>
+          </select></label>
+      </div>
+      <button id="merge-start" class="w-full bg-blue-600 text-white rounded py-2 font-semibold disabled:opacity-50">Ghép phụ đề vào video</button>
+    </section>
+
+    <!-- PROGRESS / RESULT -->
+    <section id="progress" class="hidden bg-white rounded shadow p-5 mt-4">
+      <div id="steps" class="space-y-2 text-sm"></div>
+      <div id="error" class="hidden mt-3 p-3 rounded bg-red-100 text-red-700 text-sm"></div>
+      <div id="result" class="hidden mt-4 flex gap-3">
+        <a id="dl-video" class="bg-green-600 text-white rounded px-4 py-2 text-sm">⬇ Tải video có sub</a>
+        <a id="dl-srt" class="bg-slate-600 text-white rounded px-4 py-2 text-sm">⬇ Tải .srt</a>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    function showTab(which) {
+      $("panel-auto").classList.toggle("hidden", which !== "auto");
+      $("panel-merge").classList.toggle("hidden", which !== "merge");
+      $("tab-auto").className = which === "auto"
+        ? "px-4 py-2 rounded-t bg-white font-semibold border-b-2 border-blue-500"
+        : "px-4 py-2 rounded-t bg-slate-200";
+      $("tab-merge").className = which === "merge"
+        ? "px-4 py-2 rounded-t bg-white font-semibold border-b-2 border-blue-500"
+        : "px-4 py-2 rounded-t bg-slate-200";
+    }
+    $("tab-auto").onclick = () => showTab("auto");
+    $("tab-merge").onclick = () => showTab("merge");
+
+    const stepState = {};
+    function renderSteps() {
+      $("steps").innerHTML = Object.entries(stepState).map(([name, s]) => {
+        const icon = s.done ? "✓" : "⟳";
+        const pct = (s.percent != null && !s.done) ? ` ${Math.round(s.percent)}%` : "";
+        return `<div>${icon} ${name}${pct}</div>`;
+      }).join("");
+    }
+    function resetUI() {
+      for (const k in stepState) delete stepState[k];
+      $("progress").classList.remove("hidden");
+      $("error").classList.add("hidden");
+      $("result").classList.add("hidden");
+      renderSteps();
+    }
+    function showError(msg) { const e = $("error"); e.textContent = "⚠ " + msg; e.classList.remove("hidden"); }
+
+    async function submit(url, form, buttons) {
+      buttons.forEach(b => b.disabled = true);
+      resetUI();
+      let res;
+      try { res = await fetch(url, { method: "POST", body: form }); }
+      catch (e) { showError("Không gửi được yêu cầu."); buttons.forEach(b => b.disabled = false); return; }
+      if (res.status === 409) { showError("Đang xử lý video khác, vui lòng đợi."); buttons.forEach(b => b.disabled = false); return; }
+      if (!res.ok) { const j = await res.json().catch(() => ({})); showError(j.error || "Lỗi gửi yêu cầu."); buttons.forEach(b => b.disabled = false); return; }
+      const { job_id } = await res.json();
+      listen(job_id, buttons);
+    }
+
+    function listen(jobId, buttons) {
+      const es = new EventSource(`/api/jobs/${jobId}/events`);
+      es.onmessage = (ev) => {
+        const m = JSON.parse(ev.data);
+        if (m.type === "progress") {
+          for (const k in stepState) if (k !== m.step) stepState[k].done = true;
+          stepState[m.step] = { percent: m.percent, done: m.percent === 100 };
+          renderSteps();
+        } else if (m.type === "done") {
+          for (const k in stepState) stepState[k].done = true;
+          renderSteps();
+          $("dl-video").href = `/api/jobs/${jobId}/download/video`;
+          $("dl-srt").href = `/api/jobs/${jobId}/download/srt`;
+          $("result").classList.remove("hidden");
+          es.close(); buttons.forEach(b => b.disabled = false);
+        } else if (m.type === "error") {
+          showError(m.message); es.close(); buttons.forEach(b => b.disabled = false);
+        }
+      };
+      es.onerror = () => es.close();
+    }
+
+    $("auto-start").onclick = () => {
+      const f = $("auto-video").files[0];
+      if (!f) return showError("Chọn video trước.");
+      const fd = new FormData();
+      fd.append("video", f);
+      fd.append("language", $("auto-lang").value);
+      fd.append("model", $("auto-model").value);
+      fd.append("mode", $("auto-mode").value);
+      submit("/api/auto", fd, [$("auto-start")]);
+    };
+    $("merge-start").onclick = () => {
+      const v = $("merge-video").files[0], s = $("merge-sub").files[0];
+      if (!v || !s) return showError("Chọn cả video và file sub.");
+      const fd = new FormData();
+      fd.append("video", v); fd.append("sub", s);
+      fd.append("offset", $("merge-offset").value || "0");
+      fd.append("mode", $("merge-mode").value);
+      submit("/api/merge", fd, [$("merge-start")]);
+    };
+  </script>
+</body>
+</html>

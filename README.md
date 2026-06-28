@@ -95,6 +95,18 @@ Hai phần tốn thời gian, tăng tốc khác nhau:
 | Nhanh nhất tuyệt đối | `MODE="soft"` (không re-encode) |
 | File nhỏ nhất, chấp nhận chậm | `MODE="burn"` + `ENCODER="software"` |
 
+## Giao diện web
+
+```bash
+./web.sh        # mở http://localhost:5005
+```
+
+- **Tab "Tự động tạo sub":** upload video → whisper nhận diện → nhúng sub → tải về (video + .srt).
+- **Tab "Ghép sub có sẵn":** upload video + file sub. Sub có timeline (`.srt`/`.vtt`/`.ass`) thì
+  dời theo ô "Bắt đầu sub từ giây thứ"; sub là **văn bản thuần** (`.txt`/`.docx`, không timeline)
+  thì whisper nghe video rồi **tự căn** văn bản vào timeline. Chọn kiểu sub cứng/mềm.
+- Lần đầu `web.sh` tự tạo venv và cài Flask (thuần Python, không đụng PyTorch).
+
 ## Ghi chú
 - `sub.sh video.mp4` — bản chạy lẻ 1 file (tham số `-l`, `-m`, `--mode`), nếu không muốn dùng thư mục.
 - File audio tạm được tự xoá sau khi xong.
