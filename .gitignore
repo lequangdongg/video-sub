@@ -1,0 +1,22 @@
+# video nguồn & kết quả — không gửi kèm source
+input/*
+output/*
+!input/.gitkeep
+!output/.gitkeep
+
+# file audio tạm
+*.wav
+
+# model whisper (tải qua install.sh, rất nặng)
+*.bin
+
+# macOS
+.DS_Store
+
+# python / web ui
+.venv/
+__pycache__/
+*.pyc
+webapp/jobs/
+tests/fixtures/*.mp4
+tests/fixtures/*.wav
