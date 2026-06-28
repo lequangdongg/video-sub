@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hmac
 import json
 import os
 import queue
@@ -20,6 +21,23 @@ def create_app(jobs_root: str | None = None) -> Flask:
     here = os.path.dirname(__file__)
     app.config["JOBS_ROOT"] = jobs_root or os.path.join(here, "jobs")
     os.makedirs(app.config["JOBS_ROOT"], exist_ok=True)
+
+    # Basic Auth: bật khi đặt AUTH_USER (+ AUTH_PASS); để trống thì tắt (tiện chạy local).
+    app.config.setdefault("AUTH_USER", os.environ.get("AUTH_USER") or None)
+    app.config.setdefault("AUTH_PASS", os.environ.get("AUTH_PASS") or "")
+
+    @app.before_request
+    def _require_basic_auth():
+        user = app.config.get("AUTH_USER")
+        if not user:
+            return None  # chưa đặt -> không yêu cầu đăng nhập
+        auth = request.authorization
+        if (auth and auth.type == "basic"
+                and hmac.compare_digest(auth.username or "", user)
+                and hmac.compare_digest(auth.password or "", app.config.get("AUTH_PASS") or "")):
+            return None
+        return Response("Cần đăng nhập.", 401,
+                        {"WWW-Authenticate": 'Basic realm="Auto Sub"'})
 
     from webapp import pipeline
 

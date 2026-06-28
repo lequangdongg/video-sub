@@ -7,6 +7,7 @@
 #   PORT=8080 ./serve.sh             # đổi cổng (mặc định 5005)
 #   THREADS=12 ./serve.sh            # số luồng phục vụ song song (mặc định 8)
 #   HOST=127.0.0.1 ./serve.sh        # chỉ máy này (không chia sẻ LAN)
+#   AUTH_USER=admin AUTH_PASS=123 ./serve.sh   # BẬT đăng nhập (nên dùng khi public)
 #
 # Khác với web.sh (dev server, chỉ localhost): serve.sh dùng gunicorn,
 # bind 0.0.0.0 nên các máy khác trong LAN vào được.
@@ -41,6 +42,11 @@ if [[ "$HOST" == "0.0.0.0" && -n "${IP:-}" ]]; then
   echo "    Máy khác:  http://$IP:$PORT   (mở trên máy cùng mạng LAN/Wi-Fi)"
 elif [[ "$HOST" == "0.0.0.0" ]]; then
   echo "    (Không dò được IP LAN — kiểm tra kết nối mạng)"
+fi
+if [[ -n "${AUTH_USER:-}" ]]; then
+  echo "    Đăng nhập: BẬT (user: $AUTH_USER)"
+else
+  echo "    Đăng nhập: TẮT  -> bật bằng:  AUTH_USER=admin AUTH_PASS=matkhau ./serve.sh"
 fi
 echo "    Dừng:      Ctrl+C"
 echo "    Lưu ý: macOS có thể hỏi 'cho phép Python nhận kết nối mạng' -> bấm Cho phép (Allow)."

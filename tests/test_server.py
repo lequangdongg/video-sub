@@ -21,6 +21,18 @@ def test_index_served(client):
     assert "Ghép sub".encode() in r.data
 
 
+def test_basic_auth_blocks_and_allows(tmp_path):
+    import base64
+    app = create_app(jobs_root=str(tmp_path))
+    app.config.update(TESTING=True, AUTH_USER="admin", AUTH_PASS="secret")
+    c = app.test_client()
+    assert c.get("/").status_code == 401                       # thiếu creds
+    bad = base64.b64encode(b"admin:wrong").decode()
+    assert c.get("/", headers={"Authorization": f"Basic {bad}"}).status_code == 401
+    ok = base64.b64encode(b"admin:secret").decode()
+    assert c.get("/", headers={"Authorization": f"Basic {ok}"}).status_code == 200
+
+
 def test_busy_returns_409(client):
     from webapp import server
     server._STATE["busy"] = True
