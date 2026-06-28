@@ -87,6 +87,18 @@ fi
 chmod +x "$SCRIPT_DIR/run.sh" "$SCRIPT_DIR/sub.sh" 2>/dev/null || true
 mkdir -p "$SCRIPT_DIR/input" "$SCRIPT_DIR/output"
 
+# ---- 5b. Python venv + thư viện chạy web (Flask...) ----
+say "Cài Python venv + thư viện web (Flask)..."
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "    python3 chưa có -> cài qua Homebrew..."
+  brew install python
+fi
+if [[ ! -d "$SCRIPT_DIR/.venv" ]]; then
+  python3 -m venv "$SCRIPT_DIR/.venv"
+fi
+"$SCRIPT_DIR/.venv/bin/pip" install --quiet --upgrade pip
+"$SCRIPT_DIR/.venv/bin/pip" install --quiet -r "$SCRIPT_DIR/requirements.txt"
+
 # ---- 6. Kiểm tra cuối ----
 say "Kiểm tra:"
 ok=1
@@ -95,6 +107,7 @@ if has_libass; then echo "  ✓ ffmpeg (libass) — burn-in OK"
 elif command -v ffmpeg >/dev/null 2>&1; then echo "  ⚠ ffmpeg KHÔNG libass — chỉ sub mềm/srt"
 else echo "  ✗ ffmpeg"; ok=0; fi
 if [[ -f "$MODEL_BIN" ]]; then echo "  ✓ model $MODEL"; else echo "  ✗ model"; ok=0; fi
+if "$SCRIPT_DIR/.venv/bin/python" -c "import flask" >/dev/null 2>&1; then echo "  ✓ venv + Flask (web sẵn sàng)"; else echo "  ✗ venv/Flask"; ok=0; fi
 
 if [[ $ok -eq 1 ]]; then
   say "Xong! Bỏ video vào thư mục input/ rồi chạy:   ./run.sh"
