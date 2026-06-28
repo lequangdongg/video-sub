@@ -22,6 +22,13 @@ def create_app(jobs_root: str | None = None) -> Flask:
     app.config["JOBS_ROOT"] = jobs_root or os.path.join(here, "jobs")
     os.makedirs(app.config["JOBS_ROOT"], exist_ok=True)
 
+    @app.before_request
+    def _log_request():
+        if not app.config.get("TESTING"):
+            cl = request.content_length or 0
+            print(f"[req] {request.method} {request.path} "
+                  f"from {request.remote_addr} len={cl}", flush=True)
+
     # Basic Auth: bật khi đặt AUTH_USER (+ AUTH_PASS); để trống thì tắt (tiện chạy local).
     app.config.setdefault("AUTH_USER", os.environ.get("AUTH_USER") or None)
     app.config.setdefault("AUTH_PASS", os.environ.get("AUTH_PASS") or "")
