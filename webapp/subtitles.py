@@ -160,36 +160,43 @@ def align(cue_texts: list[str], words: list[tuple[str, float, float]]) -> list[C
     u_norm = [u[1] for u in user_words]
     sm = SequenceMatcher(a=u_norm, b=w_norm, autojunk=False)
 
-    times: list[float | None] = [None] * len(user_words)
+    starts: list[float | None] = [None] * len(user_words)
+    ends: list[float | None] = [None] * len(user_words)
     matched = 0
     for ai, bj, size in sm.get_matching_blocks():
         for k in range(size):
-            times[ai + k] = words[bj + k][1]
+            starts[ai + k] = words[bj + k][1]
+            ends[ai + k] = words[bj + k][2]
             matched += 1
     if matched < max(1, len(user_words)) * 0.25:
         return _distribute(cue_texts, span0, span1)
 
-    known = [(i, t) for i, t in enumerate(times) if t is not None]
-    for idx in range(len(times)):
-        if times[idx] is not None:
-            continue
-        prev = max((k for k in known if k[0] < idx), default=(0, span0))
-        nxt = min((k for k in known if k[0] > idx), default=(len(times) - 1, span1))
-        if nxt[0] == prev[0]:
-            times[idx] = prev[1]
-        else:
-            frac = (idx - prev[0]) / (nxt[0] - prev[0])
-            times[idx] = prev[1] + frac * (nxt[1] - prev[1])
+    def _interp(seq: list[float | None], lo: float, hi: float) -> None:
+        known = [(i, t) for i, t in enumerate(seq) if t is not None]
+        for idx in range(len(seq)):
+            if seq[idx] is not None:
+                continue
+            prev = max((k for k in known if k[0] < idx), default=(0, lo))
+            nxt = min((k for k in known if k[0] > idx), default=(len(seq) - 1, hi))
+            if nxt[0] == prev[0]:
+                seq[idx] = prev[1]
+            else:
+                frac = (idx - prev[0]) / (nxt[0] - prev[0])
+                seq[idx] = prev[1] + frac * (nxt[1] - prev[1])
 
-    by_cue: dict[int, list[float]] = {}
-    for (ci, _), t in zip(user_words, times):
-        by_cue.setdefault(ci, []).append(t)
+    _interp(starts, span0, span1)
+    _interp(ends, span0, span1)
+
+    by_cue: dict[int, list[tuple[float, float]]] = {}
+    for (ci, _), s, e in zip(user_words, starts, ends):
+        by_cue.setdefault(ci, []).append((s, e))
 
     cues: list[Cue] = []
     for ci, text in enumerate(cue_texts):
-        ts = by_cue.get(ci)
-        if ts:
-            cues.append(Cue(round(min(ts), 3), round(max(ts), 3), text))
+        pairs = by_cue.get(ci)
+        if pairs:
+            cues.append(Cue(round(min(p[0] for p in pairs), 3),
+                            round(max(p[1] for p in pairs), 3), text))
         else:
             anchor = cues[-1].end if cues else span0
             cues.append(Cue(round(anchor, 3), round(anchor, 3), text))
