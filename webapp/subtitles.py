@@ -64,6 +64,22 @@ def shift(cues: list[Cue], offset: float) -> list[Cue]:
     return [Cue(max(0.0, c.start + offset), max(0.0, c.end + offset), c.text) for c in cues]
 
 
+def hide_before(cues: list[Cue], t: float) -> list[Cue]:
+    """Ẩn phụ đề trước giây t, hiện ra từ giây t:
+    - cue kết thúc trước t        -> bỏ
+    - cue đang nói khi chạm t     -> hiện từ t đến hết (cắt start = t), end giữ nguyên
+    - cue bắt đầu sau t           -> giữ nguyên mốc thật
+    nên phần còn lại vẫn khớp đúng tiếng nói."""
+    if t <= 0:
+        return cues
+    out: list[Cue] = []
+    for c in cues:
+        if c.end <= t:
+            continue
+        out.append(Cue(max(c.start, t), c.end, c.text))
+    return out
+
+
 # ---------------------------------------------------------------- text extract
 
 def extract_text(path: str) -> str:

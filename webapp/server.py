@@ -36,6 +36,7 @@ def create_app(jobs_root: str | None = None) -> Flask:
             "fill": form.get("fill") or None,
             "outline": form.get("outline") or None,
             "outline_color": form.get("outline_color") or None,
+            "outline_opacity": form.get("outline_opacity") or None,
             "box": _truthy(form.get("box")),
             "box_color": form.get("box_color") or None,
             "box_opacity": form.get("box_opacity") or None,
@@ -93,10 +94,15 @@ def create_app(jobs_root: str | None = None) -> Flask:
             return busy
         if "video" not in request.files:
             return jsonify(error="Thiếu file video."), 400
+        try:
+            offset = float(request.form.get("offset", "0") or "0")
+        except ValueError:
+            offset = 0.0
         opts = {
             "language": request.form.get("language", "vi"),
             "model": request.form.get("model", "large-v3-turbo"),
             "mode": request.form.get("mode", "burn"),
+            "offset": offset,
             "style": _style_from_form(request.form) if request.form.get("mode") == "burn" else None,
         }
         d = _job_dir(uuid.uuid4().hex[:12])

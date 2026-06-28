@@ -156,6 +156,7 @@ function collectStyle() {
     fill: $("st-fill").value,
     outline: $("st-outline").value,
     outline_color: $("st-outline-color").value,
+    outline_opacity: $("st-outline-op").value,
     box: $("st-box").getAttribute("aria-pressed") === "true",
     box_color: $("st-box-color").value,
     box_opacity: $("st-box-op").value,
@@ -180,9 +181,12 @@ function applyStylePreview() {
   span.style.fontWeight = s.bold ? "800" : "600";
   span.style.fontStyle = s.italic ? "italic" : "normal";
   span.style.color = s.fill || "#fff";
+  const oc = s.outline_color || "#000000";
+  const oop = s.outline_opacity == null ? 1 : parseFloat(s.outline_opacity);
+  const ocol = `rgba(${parseInt(oc.slice(1, 3), 16)},${parseInt(oc.slice(3, 5), 16)},${parseInt(oc.slice(5, 7), 16)},${oop})`;
   const w = parseFloat(s.outline || 0) * scale * 0.5;
   span.style.textShadow = w > 0
-    ? `-${w}px -${w}px 0 ${s.outline_color}, ${w}px -${w}px 0 ${s.outline_color}, -${w}px ${w}px 0 ${s.outline_color}, ${w}px ${w}px 0 ${s.outline_color}, 0 2px 6px rgba(0,0,0,.9)`
+    ? `-${w}px -${w}px 0 ${ocol}, ${w}px -${w}px 0 ${ocol}, -${w}px ${w}px 0 ${ocol}, ${w}px ${w}px 0 ${ocol}, 0 2px 6px rgba(0,0,0,.9)`
     : "0 2px 6px rgba(0,0,0,.9)";
   if (s.box) {
     const op = parseFloat(s.box_opacity);
@@ -211,7 +215,7 @@ function applyStylePreview() {
   });
 });
 // live preview on any style change
-["st-font", "st-size", "st-fill", "st-outline", "st-outline-color", "st-align", "st-margin", "st-box-color", "st-box-op"]
+["st-font", "st-size", "st-fill", "st-outline", "st-outline-color", "st-outline-op", "st-align", "st-margin", "st-box-color", "st-box-op"]
   .forEach((id) => $(id).addEventListener("input", applyStylePreview));
 // show/hide panel on mode change
 ["auto-mode", "merge-mode"].forEach((id) => $(id).addEventListener("change", updateStylePanel));
@@ -225,6 +229,7 @@ $("auto-start").onclick = () => {
   fd.append("language", $("auto-lang").value);
   fd.append("model", $("auto-model").value);
   fd.append("mode", $("auto-mode").value);
+  fd.append("offset", $("auto-offset").value || "0");
   if ($("auto-mode").value === "burn") appendStyle(fd);
   submit("/api/auto", fd, $("auto-start"));
 };
@@ -249,7 +254,15 @@ $("clear-job").onclick = async () => {
     try { await fetch(`/api/jobs/${currentJob}/delete`, { method: "POST" }); } catch (e) {}
     currentJob = null;
   }
+  // reset progress + các banner (Hoàn tất / lỗi)
+  for (const k in stepState) delete stepState[k];
+  renderSteps();
   $("stage").classList.add("hidden");
+  $("error").classList.add("hidden");
+  $("result").classList.add("hidden");
+  // mở lại nút bấm + reset input + banner preview
+  $("auto-start").disabled = false;
+  $("merge-start").disabled = false;
   ["auto-video", "merge-video", "merge-sub"].forEach((id) => { $(id).value = ""; });
   markFilepick("pick-merge-sub", null);
   setVideoPreview(null);

@@ -152,8 +152,8 @@ def build_force_style(style: dict | None) -> str:
         parts.append(f"FontName={style['font']}")
     if style.get("size"):
         parts.append(f"FontSize={int(float(style['size']))}")
-    if style.get("bold"):
-        parts.append("Bold=-1")
+    # luôn ghi Bold tường minh: tránh libass tự "giả đậm" hoặc chọn nhầm face Bold
+    parts.append("Bold=-1" if style.get("bold") else "Bold=0")
     if style.get("italic"):
         parts.append("Italic=-1")
     if style.get("fill"):
@@ -161,7 +161,8 @@ def build_force_style(style: dict | None) -> str:
     if style.get("outline") is not None and style.get("outline") != "":
         parts.append(f"Outline={style['outline']}")
     if style.get("outline_color"):
-        parts.append(f"OutlineColour={hex_to_ass(style['outline_color'])}")
+        op = float(style.get("outline_opacity", 1.0) or 1.0)
+        parts.append(f"OutlineColour={hex_to_ass(style['outline_color'], 1.0 - op)}")
     if style.get("box"):
         parts.append("BorderStyle=3")
         if style.get("box_color"):
@@ -246,12 +247,21 @@ def process_auto(video: str, job_dir: str, opts: dict, on_progress=None) -> dict
     lang = opts.get("language", "vi")
     model = opts.get("model", "large-v3-turbo")
     mode = opts.get("mode", "burn")
+    try:
+        start_at = float(opts.get("offset") or 0)
+    except (TypeError, ValueError):
+        start_at = 0.0
     wav = os.path.join(job_dir, "audio.wav")
     srt = os.path.join(job_dir, "output.srt")
     on_progress and on_progress("Tách audio", None)
     extract_audio(video, wav)
     on_progress and on_progress("Tách audio", 100.0)
     transcribe(wav, lang, model, srt, on_progress)
+    if start_at > 0:
+        # whisper định giờ nguyên video -> ẩn phần trước start_at, hiện ra từ start_at;
+        # câu đang nói khi chạm mốc thì hiện tiếp -> vẫn khớp đúng tiếng nói
+        cues = subtitles.hide_before(subtitles.parse_srt(srt), start_at)
+        subtitles.write_srt(cues, srt)
     out = srt if mode == "srt" else _output_video_path(job_dir, video, mode)
     burn_or_mux(video, srt, mode, out, on_progress, opts.get("style"))
     if os.path.exists(wav):

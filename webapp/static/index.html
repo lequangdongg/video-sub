@@ -52,7 +52,7 @@
       <!-- TAB 1 -->
       <section class="panel" id="panel-auto" role="tabpanel" aria-labelledby="tab-auto">
         <p class="hint">Whisper nghe video và tạo phụ đề tự động. Chọn video ở khung phía trên.</p>
-        <div class="row cols-3">
+        <div class="row cols-2">
           <div class="field">
             <label>Ngôn ngữ nói</label>
             <select class="control" id="auto-lang">
@@ -76,6 +76,13 @@
               <option value="soft">Bật/tắt được</option>
               <option value="srt">Chỉ file .srt</option>
             </select>
+          </div>
+          <div class="field">
+            <label>Bắt đầu sub từ giây thứ</label>
+            <div class="with-unit">
+              <input class="control" id="auto-offset" type="number" value="6" step="0.1">
+              <span class="unit">giây</span>
+            </div>
           </div>
         </div>
         <button class="btn" id="auto-start">
@@ -153,12 +160,12 @@
         </div>
         <div class="field">
           <label>Cỡ chữ</label>
-          <input class="control" id="st-size" type="number" value="18" min="6" step="1">
+          <input class="control" id="st-size" type="number" value="16" min="6" step="1">
         </div>
         <div class="field">
           <label>Kiểu chữ</label>
           <div class="toggles">
-            <button type="button" class="toggle" id="st-bold" aria-pressed="false" title="Đậm">B</button>
+            <button type="button" class="toggle" id="st-bold" aria-pressed="true" title="Đậm">B</button>
             <button type="button" class="toggle i" id="st-italic" aria-pressed="false" title="Nghiêng">I</button>
           </div>
         </div>
@@ -172,7 +179,11 @@
         </div>
         <div class="field">
           <label>Độ dày viền</label>
-          <input class="control" id="st-outline" type="number" value="2" min="0" step="0.5">
+          <input class="control" id="st-outline" type="number" value="0.65" min="0" step="0.05">
+        </div>
+        <div class="field">
+          <label>Độ mờ viền</label>
+          <input class="range" id="st-outline-op" type="range" min="0" max="1" step="0.05" value="1">
         </div>
         <div class="field">
           <label>Vị trí</label>
@@ -189,8 +200,8 @@
         <div class="field">
           <label>Nền chữ</label>
           <div class="inline">
-            <button type="button" class="toggle" id="st-box" aria-pressed="false" title="Bật nền">Nền</button>
-            <input class="swatch" id="st-box-color" type="color" value="#000000" style="max-width:64px">
+            <button type="button" class="toggle" id="st-box" aria-pressed="true" title="Bật nền">Nền</button>
+            <input class="swatch" id="st-box-color" type="color" value="#4d4d4d" style="max-width:64px">
           </div>
         </div>
         <div class="field">

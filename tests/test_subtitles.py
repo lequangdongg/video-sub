@@ -1,7 +1,7 @@
 import zipfile
 
 from webapp.subtitles import (
-    Cue, align, extract_text, format_ts, parse_srt, shift,
+    Cue, align, extract_text, format_ts, hide_before, parse_srt, shift,
     split_into_cue_texts, write_srt,
 )
 
@@ -41,6 +41,14 @@ def test_shift_positive_and_clamp():
     cues = [Cue(1.0, 3.5, "a"), Cue(4.0, 5.0, "b")]
     assert shift(cues, 2.0) == [Cue(3.0, 5.5, "a"), Cue(6.0, 7.0, "b")]
     assert shift(cues, -10.0) == [Cue(0.0, 0.0, "a"), Cue(0.0, 0.0, "b")]
+
+
+def test_hide_before_clips_straddling_cue():
+    cues = [Cue(1.0, 3.0, "a"), Cue(5.5, 7.0, "b"), Cue(8.0, 9.0, "c")]
+    # t=6: bỏ "a" (hết trước 6); "b" đang nói khi chạm 6 -> hiện 6-7; "c" giữ nguyên
+    assert hide_before(cues, 6.0) == [Cue(6.0, 7.0, "b"), Cue(8.0, 9.0, "c")]
+    # t<=0 giữ nguyên tất cả
+    assert hide_before(cues, 0.0) == cues
 
 
 # ---- extract_text
