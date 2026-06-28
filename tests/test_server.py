@@ -1,4 +1,5 @@
 import io
+import os
 
 import pytest
 
@@ -71,6 +72,28 @@ def test_events_stream_and_download(client, monkeypatch):
     d = client.get(f"/api/jobs/{job_id}/download/srt")
     assert d.status_code == 200
     assert b"00:00:00,000" in d.data
+
+
+def test_delete_job_removes_dir(client, monkeypatch):
+    from webapp import pipeline, server
+
+    def fake_auto(video, job_dir, opts, on_progress=None):
+        return {"video": video, "srt": video}
+
+    monkeypatch.setattr(pipeline, "process_auto", fake_auto)
+    data = {"mode": "srt", "video": (io.BytesIO(b"x"), "c.mp4")}
+    r = client.post("/api/auto", data=data, content_type="multipart/form-data")
+    job_id = r.get_json()["job_id"]
+    b"".join(client.get(f"/api/jobs/{job_id}/events").response)  # drain to done
+
+    d = server._JOBS[job_id]["dir"]
+    assert os.path.isdir(d)
+    dr = client.post(f"/api/jobs/{job_id}/delete")
+    assert dr.status_code == 200 and dr.get_json()["ok"] is True
+    assert not os.path.exists(d)
+    assert job_id not in server._JOBS
+
+    assert client.post("/api/jobs/nope/delete").status_code == 404
 
 
 @needs_ffmpeg

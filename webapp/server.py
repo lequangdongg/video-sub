@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import queue
+import shutil
 import threading
 import uuid
 
@@ -141,6 +142,16 @@ def create_app(jobs_root: str | None = None) -> Flask:
         if not path or not os.path.exists(path):
             return jsonify(error="file không tồn tại"), 404
         return send_file(path, as_attachment=True, download_name=os.path.basename(path))
+
+    @app.post("/api/jobs/<job_id>/delete")
+    def api_delete(job_id):
+        job = _JOBS.pop(job_id, None)
+        if job is None:
+            return jsonify(error="job không tồn tại"), 404
+        d = job.get("dir")
+        if d and os.path.isdir(d):
+            shutil.rmtree(d, ignore_errors=True)
+        return jsonify(ok=True)
 
     return app
 

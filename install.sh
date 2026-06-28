@@ -98,7 +98,9 @@ if [[ -f "$MODEL_BIN" ]]; then echo "  ✓ model $MODEL"; else echo "  ✗ model
 
 if [[ $ok -eq 1 ]]; then
   say "Xong! Bỏ video vào thư mục input/ rồi chạy:   ./run.sh"
-  echo "    Hoặc mở giao diện web:   ./web.sh"
+  echo "    Mở giao diện web:        ./web.sh"
+  echo "    Chạy tất cả (web + xử lý input/): ./start.sh"
+  echo "    Dọn input/ output/:      ./clean.sh"
 else
   err "Còn thiếu thành phần ở trên — xem lại log phía trên."
   exit 1

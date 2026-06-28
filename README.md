@@ -98,14 +98,23 @@ Hai phần tốn thời gian, tăng tốc khác nhau:
 ## Giao diện web
 
 ```bash
-./web.sh        # mở http://localhost:5005
+./web.sh        # chỉ mở web (http://localhost:5005)
+./start.sh      # CHẠY TẤT CẢ: xử lý video sẵn trong input/ (run.sh) rồi mở web
 ```
 
 - **Tab "Tự động tạo sub":** upload video → whisper nhận diện → nhúng sub → tải về (video + .srt).
 - **Tab "Ghép sub có sẵn":** upload video + file sub. Sub có timeline (`.srt`/`.vtt`/`.ass`) thì
   dời theo ô "Bắt đầu sub từ giây thứ"; sub là **văn bản thuần** (`.txt`/`.docx`, không timeline)
   thì whisper nghe video rồi **tự căn** văn bản vào timeline. Chọn kiểu sub cứng/mềm.
-- Lần đầu `web.sh` tự tạo venv và cài Flask (thuần Python, không đụng PyTorch).
+- Sau khi xong, nút **"🗑 Xoá & làm video khác"** xoá video đã upload + kết quả của job đó.
+- Lần đầu `web.sh`/`start.sh` tự tạo venv và cài Flask (thuần Python, không đụng PyTorch).
+
+## Dọn dẹp
+
+```bash
+./clean.sh      # hỏi xác nhận rồi xoá sạch input/ output/ webapp/jobs/ (giữ .gitkeep)
+./clean.sh -y   # xoá luôn không hỏi
+```
 
 ## Ghi chú
 - `sub.sh video.mp4` — bản chạy lẻ 1 file (tham số `-l`, `-m`, `--mode`), nếu không muốn dùng thư mục.
