@@ -4,14 +4,11 @@
 @source "../static/index.html";
 @source "../static/app.js";
 
-/* font Việt đi kèm repo — cho phần xem trước trên trình duyệt */
-@font-face {
-  font-family: "UTM Avo";
-  src: url("/static/fonts/UTM-Avo.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
-}
+/* font Việt đi kèm repo (4 kiểu) — cho phần xem trước trên trình duyệt */
+@font-face { font-family: "UTM Avo"; src: url("/static/fonts/UTM-Avo.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "UTM Avo"; src: url("/static/fonts/UTM-AvoBold.ttf") format("truetype"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "UTM Avo"; src: url("/static/fonts/UTM-AvoItalic.ttf") format("truetype"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "UTM Avo"; src: url("/static/fonts/UTM-AvoBold_Italic.ttf") format("truetype"); font-weight: 700; font-style: italic; font-display: swap; }
 
 /* ---------------------------------------------------------------- design tokens */
 :root {
