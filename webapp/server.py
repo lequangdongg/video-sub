@@ -137,13 +137,19 @@ def create_app(jobs_root: str | None = None) -> Flask:
         d = _job_dir(uuid.uuid4().hex[:12])
         vf = request.files["video"]
         vpath = os.path.join(d, "input" + (os.path.splitext(vf.filename)[1] or ".mp4"))
+        if not app.config.get("TESTING"):
+            print(f"[auto] đang nhận file '{vf.filename}'...", flush=True)
         vf.save(vpath)
+        if not app.config.get("TESTING"):
+            print(f"[auto] đã lưu {os.path.getsize(vpath)} bytes -> bắt đầu job", flush=True)
 
         def work(on_progress):
             return pipeline.process_auto(vpath, d, opts, on_progress)
 
         job_id = _start_job(work)
         _JOBS[job_id]["dir"] = d
+        if not app.config.get("TESTING"):
+            print(f"[auto] job {job_id} đã tạo, trả 202", flush=True)
         return jsonify(job_id=job_id), 202
 
     @app.post("/api/merge")
