@@ -23,3 +23,6 @@ tests/fixtures/*.wav
 
 # node / tailwind (app.css is a committed build artifact)
 node_modules/
+
+# log runtime của tts server (do web.sh sinh ra)
+tts_server.log
