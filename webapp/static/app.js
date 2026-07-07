@@ -50,8 +50,8 @@ function assignToInput(input, file) {
 // the monitor is the video picker for BOTH tabs; sub file has its own filepick
 function activeVideoInput() { return activeTab === "auto" ? $("auto-video") : $("merge-video"); }
 
-$("auto-video").addEventListener("change", () => { const f = $("auto-video").files[0]; if (f) setVideoPreview(f); });
-$("merge-video").addEventListener("change", () => { const f = $("merge-video").files[0]; if (f) setVideoPreview(f); });
+$("auto-video").addEventListener("change", () => { const f = $("auto-video").files[0]; if (f) { resetJob(); setVideoPreview(f); } });
+$("merge-video").addEventListener("change", () => { const f = $("merge-video").files[0]; if (f) { resetJob(); setVideoPreview(f); } });
 $("merge-sub").addEventListener("change", () => markFilepick("pick-merge-sub", $("merge-sub").files[0]));
 
 $("monitor").addEventListener("click", () => activeVideoInput().click());
@@ -64,6 +64,7 @@ $("monitor").addEventListener("drop", (e) => {
   const f = e.dataTransfer.files[0];
   if (!f) return;
   const input = activeVideoInput();
+  resetJob();                 // thả video mới -> xoá kết quả/tiến trình cũ
   assignToInput(input, f);
   setVideoPreview(f);
 });
@@ -302,25 +303,39 @@ $("merge-start").onclick = () => {
 updateStylePanel();
 applyStylePreview();
 
-$("clear-job").onclick = async () => {
+// xoá job cũ + tiến trình + các banner (không đụng khung preview / input)
+function resetJob() {
   stopPolling();
   if (currentJob) {
-    try { await fetch(`/api/jobs/${currentJob}/delete`, { method: "POST" }); } catch (e) {}
+    fetch(`/api/jobs/${currentJob}/delete`, { method: "POST" }).catch(() => {});
     currentJob = null;
   }
-  // reset progress + các banner (Hoàn tất / lỗi)
   for (const k in stepState) delete stepState[k];
   renderSteps();
   $("stage").classList.add("hidden");
   $("error").classList.add("hidden");
   $("result").classList.add("hidden");
-  // mở lại nút bấm + reset input + banner preview
   $("auto-start").disabled = false;
   $("merge-start").disabled = false;
-  ["auto-video", "merge-video", "merge-sub"].forEach((id) => { $(id).value = ""; });
-  markFilepick("pick-merge-sub", null);
+}
+
+// đưa khung về banner kéo thả (bỏ video đang xem + input) để tiếp video mới
+function resetDropzone() {
+  ["auto-video", "merge-video"].forEach((id) => { $(id).value = ""; });
   setVideoPreview(null);
+}
+
+$("clear-job").onclick = () => {
+  resetJob();
+  $("merge-video").value = "";
+  $("merge-sub").value = "";
+  markFilepick("pick-merge-sub", null);
+  resetDropzone();
 };
+
+// tải xong -> trả khung về banner kéo thả (giữ nguyên kết quả để còn tải file kia)
+["dl-video", "dl-srt"].forEach((id) =>
+  $(id).addEventListener("click", () => setTimeout(resetDropzone, 400)));
 
 /* ---------------------------------------------------------------- waveform */
 (function buildWave() {
