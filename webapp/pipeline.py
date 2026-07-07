@@ -323,34 +323,45 @@ def write_band_ass(cues, ass_path: str, style: dict, width: int, height: int) ->
         "Effect, Text\n"
     )
 
+    max_lines = 2       # mỗi khung phụ đề tối đa 2 dòng
     lines_out = []
     for c in cues:
         text = (c.text or "").replace("{", "(").replace("}", ")")
         wrapped = _wrap_width(text, fontpx, is_bold, max_text_w)
-        n = len(wrapped)
-        block_h = n * line_h
-        # hộp ôm sát chữ: rộng theo bề rộng THẬT của dòng dài nhất + đệm, căn giữa
-        text_w = max((_line_width(ln, fontpx, is_bold) for ln in wrapped), default=0)
-        box_w = min(max_box_w, text_w + 2 * pad_x)
-        x1 = round((play_x - box_w) / 2)
-        x2 = round(x1 + box_w)
-        if align == 8:      # top
-            y1 = margin_v - pad_top
-            y2 = margin_v + block_h + pad_bot
-        elif align == 5:    # middle
-            cy = _PLAYRES_Y / 2
-            y1 = cy - block_h / 2 - pad_top
-            y2 = cy + block_h / 2 + pad_bot
-        else:               # bottom
-            yb = _PLAYRES_Y - margin_v
-            y1 = yb - block_h - pad_top
-            y2 = yb + pad_bot
-        iy1, iy2 = round(y1), round(y2)
-        band = (f"{{\\p1\\an7\\pos(0,0)\\1c{band_bgr}\\1a{band_a}\\bord0\\shad0}}"
-                f"m {x1} {iy1} l {x2} {iy1} {x2} {iy2} {x1} {iy2}{{\\p0}}")
-        st, en = _ass_time(c.start), _ass_time(c.end)
-        lines_out.append(f"Dialogue: 0,{st},{en},Text,,0,0,0,,{band}")
-        lines_out.append(f"Dialogue: 1,{st},{en},Text,,0,0,0,,{'\\N'.join(wrapped)}")
+        # câu dài (>2 dòng) -> tách thành nhiều khung nối tiếp, chia thời gian theo số ký tự
+        pages = [wrapped[i:i + max_lines] for i in range(0, len(wrapped), max_lines)]
+        weights = [sum(len(ln) for ln in pg) or 1 for pg in pages]
+        total_w = sum(weights)
+        dur = max(0.0, c.end - c.start)
+        t = c.start
+        for idx, (pg, w) in enumerate(zip(pages, weights)):
+            p_start = t
+            p_end = c.end if idx == len(pages) - 1 else t + dur * (w / total_w)
+            t = p_end
+            n = len(pg)
+            block_h = n * line_h
+            # hộp ôm sát chữ: rộng theo dòng dài nhất trong khung + đệm, căn giữa
+            text_w = max((_line_width(ln, fontpx, is_bold) for ln in pg), default=0)
+            box_w = min(max_box_w, text_w + 2 * pad_x)
+            x1 = round((play_x - box_w) / 2)
+            x2 = round(x1 + box_w)
+            if align == 8:      # top
+                y1 = margin_v - pad_top
+                y2 = margin_v + block_h + pad_bot
+            elif align == 5:    # middle
+                cy = _PLAYRES_Y / 2
+                y1 = cy - block_h / 2 - pad_top
+                y2 = cy + block_h / 2 + pad_bot
+            else:               # bottom
+                yb = _PLAYRES_Y - margin_v
+                y1 = yb - block_h - pad_top
+                y2 = yb + pad_bot
+            iy1, iy2 = round(y1), round(y2)
+            band = (f"{{\\p1\\an7\\pos(0,0)\\1c{band_bgr}\\1a{band_a}\\bord0\\shad0}}"
+                    f"m {x1} {iy1} l {x2} {iy1} {x2} {iy2} {x1} {iy2}{{\\p0}}")
+            st, en = _ass_time(p_start), _ass_time(p_end)
+            lines_out.append(f"Dialogue: 0,{st},{en},Text,,0,0,0,,{band}")
+            lines_out.append(f"Dialogue: 1,{st},{en},Text,,0,0,0,,{'\\N'.join(pg)}")
 
     with open(ass_path, "w", encoding="utf-8") as f:
         f.write(header + "\n".join(lines_out) + "\n")
