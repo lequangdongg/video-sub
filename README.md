@@ -37,12 +37,26 @@ MODE="burn"              # burn (cứng) | soft (mềm) | srt (chỉ .srt)
 
 ## Cài đặt — chạy 1 lệnh
 
+Máy mới (macOS) — clone rồi cài:
 ```bash
+git clone https://github.com/lequangdongg/video-sub.git
+cd video-sub
 ./install.sh
 ```
 
 Tự cài hết: Homebrew (nếu thiếu) → `whisper-cpp` → `ffmpeg` có libass → tải model whisper
-→ tạo thư mục `input/` `output/`. Chạy lại nhiều lần vô tư (có gì rồi thì bỏ qua).
+→ tạo `.venv` + cài Flask → `chmod +x` mọi script → tạo `input/` `output/`.
+Chạy lại nhiều lần vô tư (có gì rồi thì bỏ qua).
+
+Sau khi cài xong, **chạy**:
+```bash
+./web.sh          # mở giao diện web ở http://localhost:5005
+# hoặc xử lý hàng loạt: bỏ video vào input/ rồi  ./run.sh
+```
+
+> ⚠️ Luôn chạy qua `./web.sh` / `./run.sh` (chúng dùng đúng Python trong `.venv`).
+> **Đừng** gõ `python3 -m webapp.server` trực tiếp — Python hệ thống của macOS (3.9)
+> không có Flask nên sẽ lỗi `ModuleNotFoundError: No module named 'flask'`.
 
 Tùy chọn:
 ```bash

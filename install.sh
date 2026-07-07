@@ -84,7 +84,7 @@ else
 fi
 
 # ---- 5. Quyền chạy + thư mục ----
-chmod +x "$SCRIPT_DIR/run.sh" "$SCRIPT_DIR/sub.sh" "$SCRIPT_DIR/serve.sh" "$SCRIPT_DIR/tunnel.sh" 2>/dev/null || true
+chmod +x "$SCRIPT_DIR"/*.sh 2>/dev/null || true   # tất cả script (run/web/serve/start/clean/sub/tunnel)
 mkdir -p "$SCRIPT_DIR/input" "$SCRIPT_DIR/output"
 
 # ---- 5b. Python venv + thư viện chạy web (Flask...) ----
