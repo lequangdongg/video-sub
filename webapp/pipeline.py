@@ -360,8 +360,9 @@ def write_band_ass(cues, ass_path: str, style: dict, width: int, height: int) ->
             band = (f"{{\\p1\\an7\\pos(0,0)\\1c{band_bgr}\\1a{band_a}\\bord0\\shad0}}"
                     f"m {x1} {iy1} l {x2} {iy1} {x2} {iy2} {x1} {iy2}{{\\p0}}")
             st, en = _ass_time(p_start), _ass_time(p_end)
+            text_body = "\\N".join(pg)   # tách ra biến: f-string không cho backslash trong {} (Python <3.12)
             lines_out.append(f"Dialogue: 0,{st},{en},Text,,0,0,0,,{band}")
-            lines_out.append(f"Dialogue: 1,{st},{en},Text,,0,0,0,,{'\\N'.join(pg)}")
+            lines_out.append(f"Dialogue: 1,{st},{en},Text,,0,0,0,,{text_body}")
 
     with open(ass_path, "w", encoding="utf-8") as f:
         f.write(header + "\n".join(lines_out) + "\n")
