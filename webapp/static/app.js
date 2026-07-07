@@ -4,21 +4,17 @@ const $ = (id) => document.getElementById(id);
 let activeTab = "auto";
 let currentJob = null;
 let pollTimer = null;
-let jobKind = "sub";   // "sub" | "tts" -> quyết định link tải khi xong
 
 /* ---------------------------------------------------------------- tabs */
 function showTab(which) {
   activeTab = which;
-  for (const t of ["auto", "merge", "tts"]) {
-    $("panel-" + t).classList.toggle("hidden", which !== t);
-    $("tab-" + t).setAttribute("aria-selected", which === t);
-  }
-  // khung xem trước/monitor chỉ dùng cho sub, ẩn bảng style khi ở tab đọc văn bản
-  $("style-panel").classList.toggle("hidden", which === "tts" || activeMode() !== "burn");
+  $("panel-auto").classList.toggle("hidden", which !== "auto");
+  $("panel-merge").classList.toggle("hidden", which !== "merge");
+  $("tab-auto").setAttribute("aria-selected", which === "auto");
+  $("tab-merge").setAttribute("aria-selected", which === "merge");
 }
 $("tab-auto").onclick = () => { showTab("auto"); updateStylePanel(); };
 $("tab-merge").onclick = () => { showTab("merge"); updateStylePanel(); };
-$("tab-tts").onclick = () => { showTab("tts"); ttsLoadVoices(); };
 
 /* ---------------------------------------------------------------- video preview / monitor */
 function fmtTc(sec) {
@@ -73,7 +69,7 @@ $("monitor").addEventListener("drop", (e) => {
 });
 
 /* ---------------------------------------------------------------- progress / SSE */
-const STEP_ORDER = ["Tách audio", "Nhận diện giọng nói", "Nhận diện & căn chỉnh", "Chuẩn bị sub", "Nhúng phụ đề", "Tổng hợp giọng nói"];
+const STEP_ORDER = ["Tách audio", "Nhận diện giọng nói", "Nhận diện & căn chỉnh", "Chuẩn bị sub", "Nhúng phụ đề"];
 const stepState = {};
 
 function renderSteps() {
@@ -110,7 +106,6 @@ function showError(msg) {
 async function submit(url, form, btn) {
   btn.disabled = true;
   resetUI();
-  jobKind = "sub";
   let res;
   try { res = await fetch(url, { method: "POST", body: form }); }
   catch (e) { showError("Không gửi được yêu cầu. Kiểm tra kết nối tới máy chủ."); btn.disabled = false; return; }
@@ -139,19 +134,8 @@ function applyStatus(m, jobId, btn) {
   if (m.status === "done") {
     for (const k in stepState) stepState[k].done = true;
     renderSteps();
-    const audio = $("tts-audio");
-    if (jobKind === "tts") {
-      $("dl-video").href = `/api/jobs/${jobId}/download/audio`;
-      $("dl-video").querySelector(".lbl").textContent = "Tải file mp3";
-      $("dl-srt").href = `/api/jobs/${jobId}/download/srt`;
-      audio.src = `/api/jobs/${jobId}/download/audio`;
-      audio.classList.remove("hidden");
-    } else {
-      $("dl-video").href = `/api/jobs/${jobId}/download/video`;
-      $("dl-video").querySelector(".lbl").textContent = "Tải video có sub";
-      $("dl-srt").href = `/api/jobs/${jobId}/download/srt`;
-      audio.classList.add("hidden"); audio.removeAttribute("src");
-    }
+    $("dl-video").href = `/api/jobs/${jobId}/download/video`;
+    $("dl-srt").href = `/api/jobs/${jobId}/download/srt`;
     $("result").classList.remove("hidden");
     stopPolling(); btn.disabled = false;
   } else if (m.status === "error") {
@@ -265,7 +249,7 @@ function applyStylePreview() {
 const PRESETS = {
   outline: { fill: "#ffffff", bold: true, outline: "1.2", outline_color: "#000000", outline_op: "1", box: false },
   thin:    { fill: "#ffffff", bold: true, outline: "0.7", outline_color: "#000000", outline_op: "1", box: false },
-  box:     { fill: "#ffffff", bold: true, outline: "0", outline_color: "#000000", outline_op: "1", box: true, box_color: "#000000", box_op: "0.3" },
+  box:     { fill: "#ffffff", bold: true, outline: "0", outline_color: "#000000", outline_op: "1", box: true, box_color: "#000000", box_op: "0.25" },
   yellow:  { fill: "#ffdd00", bold: true, outline: "1.2", outline_color: "#000000", outline_op: "1", box: false },
 };
 
@@ -318,89 +302,6 @@ $("merge-start").onclick = () => {
 updateStylePanel();
 applyStylePreview();
 
-/* ---------------------------------------------------------------- đọc văn bản -> giọng nói (VietTTS) */
-let ttsGender = "female";
-let ttsVoicesLoaded = false;
-let ttsPreviewAudio = null;
-
-function activeVoice() { return $(ttsGender === "male" ? "tts-voice-male" : "tts-voice-female").value; }
-
-function fillVoiceSelect(sel, list) {
-  sel.innerHTML = "";
-  for (const v of (list || [])) {
-    const o = document.createElement("option");
-    o.value = v.id; o.textContent = v.label; sel.appendChild(o);
-  }
-}
-
-async function ttsLoadVoices() {
-  if (ttsVoicesLoaded) return;
-  const warn = $("tts-warn");
-  try {
-    const r = await fetch("/api/tts/voices", { cache: "no-store" });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error || "Không tải được danh sách giọng.");
-    fillVoiceSelect($("tts-voice-female"), j.female);
-    fillVoiceSelect($("tts-voice-male"), j.male);
-    ttsVoicesLoaded = true;
-    warn.classList.add("hidden");
-    $("tts-start").disabled = false;
-  } catch (e) {
-    warn.textContent = "⚠ " + e.message + " — bật ./tts_server.sh rồi mở lại tab này.";
-    warn.classList.remove("hidden");
-    $("tts-start").disabled = true;
-  }
-}
-
-["female", "male"].forEach((g) => {
-  $("tts-gender-" + g).addEventListener("click", () => {
-    ttsGender = g;
-    $("tts-gender-female").setAttribute("aria-pressed", String(g === "female"));
-    $("tts-gender-male").setAttribute("aria-pressed", String(g === "male"));
-  });
-});
-
-async function ttsPreview(voice, btn) {
-  if (!voice) return showError("Chưa có giọng để nghe. Bật ./tts_server.sh trước.");
-  const old = btn.textContent; btn.disabled = true; btn.textContent = "…";
-  try {
-    const r = await fetch("/api/tts/preview", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: $("tts-text").value.trim(), voice }),
-    });
-    if (!r.ok) { const j = await r.json().catch(() => ({})); throw new Error(j.error || "Lỗi nghe trước."); }
-    const blob = await r.blob();
-    if (ttsPreviewAudio) ttsPreviewAudio.pause();
-    ttsPreviewAudio = new Audio(URL.createObjectURL(blob));
-    ttsPreviewAudio.play();
-  } catch (e) {
-    showError(e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = old;
-  }
-}
-$("tts-prev-female").onclick = () => ttsPreview($("tts-voice-female").value, $("tts-prev-female"));
-$("tts-prev-male").onclick = () => ttsPreview($("tts-voice-male").value, $("tts-prev-male"));
-
-$("tts-start").onclick = async () => {
-  const text = $("tts-text").value.trim();
-  if (!text) return showError("Hãy nhập nội dung cần đọc.");
-  const voice = activeVoice();
-  if (!voice) return showError("Chưa có giọng. Bật ./tts_server.sh rồi thử lại.");
-  const btn = $("tts-start");
-  btn.disabled = true; resetUI(); jobKind = "tts";
-  let res;
-  try {
-    res = await fetch("/api/tts", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text, voice }),
-    });
-  } catch (e) { showError("Không gửi được yêu cầu."); btn.disabled = false; return; }
-  if (!res.ok) { const j = await res.json().catch(() => ({})); showError(j.error || "Lỗi tạo giọng nói."); btn.disabled = false; return; }
-  const { job_id } = await res.json();
-  listen(job_id, btn);
-};
-
 $("clear-job").onclick = async () => {
   stopPolling();
   if (currentJob) {
@@ -416,8 +317,6 @@ $("clear-job").onclick = async () => {
   // mở lại nút bấm + reset input + banner preview
   $("auto-start").disabled = false;
   $("merge-start").disabled = false;
-  $("tts-start").disabled = false;
-  const au = $("tts-audio"); au.pause(); au.classList.add("hidden");
   ["auto-video", "merge-video", "merge-sub"].forEach((id) => { $(id).value = ""; });
   markFilepick("pick-merge-sub", null);
   setVideoPreview(null);

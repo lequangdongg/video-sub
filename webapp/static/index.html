@@ -46,7 +46,6 @@
     <div class="tabs" role="tablist" aria-label="Chế độ">
       <button class="tab" id="tab-auto" role="tab" aria-selected="true">Tự động tạo sub</button>
       <button class="tab" id="tab-merge" role="tab" aria-selected="false">Ghép sub có sẵn</button>
-      <button class="tab" id="tab-tts" role="tab" aria-selected="false">Đọc văn bản</button>
     </div>
 
     <div class="card">
@@ -81,7 +80,7 @@
           <div class="field">
             <label>Bắt đầu sub từ giây thứ</label>
             <div class="with-unit">
-              <input class="control" id="auto-offset" type="number" value="5.6" step="0.1">
+              <input class="control" id="auto-offset" type="number" value="6" step="0.1">
               <span class="unit">giây</span>
             </div>
           </div>
@@ -122,43 +121,6 @@
         <button class="btn" id="merge-start">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v6a5 5 0 0 0 5 5h7"/><path d="M16 11l4 4-4 4"/></svg>
           Ghép phụ đề
-        </button>
-      </section>
-
-      <!-- TAB 3: đọc văn bản -> giọng nói -->
-      <section class="panel hidden" id="panel-tts" role="tabpanel" aria-labelledby="tab-tts">
-        <p class="hint">Nhập văn bản tiếng Việt, chọn giọng rồi bấm tạo. Kết quả gồm <b>.mp3</b> và <b>.srt</b> khớp thời gian. Cần bật <code>./tts_server.sh</code> trước.</p>
-        <div class="field">
-          <label>Nội dung</label>
-          <textarea class="control" id="tts-text" rows="5" placeholder="Dán hoặc nhập văn bản tiếng Việt cần đọc..."></textarea>
-        </div>
-        <div class="field">
-          <label>Dùng giọng</label>
-          <div class="toggles">
-            <button type="button" class="toggle" id="tts-gender-female" aria-pressed="true">Nữ</button>
-            <button type="button" class="toggle" id="tts-gender-male" aria-pressed="false">Nam</button>
-          </div>
-        </div>
-        <div class="row cols-2">
-          <div class="field">
-            <label>Giọng nữ</label>
-            <div class="inline">
-              <select class="control" id="tts-voice-female"></select>
-              <button type="button" class="toggle" id="tts-prev-female" title="Nghe trước">▶</button>
-            </div>
-          </div>
-          <div class="field">
-            <label>Giọng nam</label>
-            <div class="inline">
-              <select class="control" id="tts-voice-male"></select>
-              <button type="button" class="toggle" id="tts-prev-male" title="Nghe trước">▶</button>
-            </div>
-          </div>
-        </div>
-        <p class="hint hidden" id="tts-warn"></p>
-        <button class="btn" id="tts-start">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg>
-          Tạo giọng nói
         </button>
       </section>
     </div>
@@ -251,7 +213,7 @@
         </div>
         <div class="field">
           <label>Độ mờ nền</label>
-          <input class="range" id="st-box-op" type="range" min="0" max="1" step="0.05" value="0.3">
+          <input class="range" id="st-box-op" type="range" min="0" max="1" step="0.05" value="0.25">
         </div>
       </div>
     </section>
@@ -266,16 +228,15 @@
         </div>
         <div class="result hidden" id="result">
           <div class="done-tag"><span class="d"></span>Hoàn tất</div>
-          <audio class="tts-player hidden" id="tts-audio" controls preload="none"></audio>
           <a class="dl primary" id="dl-video">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M5 21h14"/></svg>
-            <span class="lbl">Tải video có sub</span>
+            Tải video có sub
           </a>
           <a class="dl ghost" id="dl-srt">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M5 21h14"/></svg>
-            <span class="lbl">Tải .srt</span>
+            Tải .srt
           </a>
-          <button class="dl trash" id="clear-job">Xoá &amp; làm lại</button>
+          <button class="dl trash" id="clear-job">Xoá &amp; làm video khác</button>
         </div>
       </div>
     </div>

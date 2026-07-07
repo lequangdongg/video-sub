@@ -46,7 +46,7 @@ def create_app(jobs_root: str | None = None) -> Flask:
         return Response("Cần đăng nhập.", 401,
                         {"WWW-Authenticate": 'Basic realm="Auto Sub"'})
 
-    from webapp import pipeline, tts
+    from webapp import pipeline
 
     def _truthy(v):
         return str(v).lower() in ("1", "true", "on", "yes")
@@ -148,7 +148,6 @@ def create_app(jobs_root: str | None = None) -> Flask:
 
         job_id = _start_job(work)
         _JOBS[job_id]["dir"] = d
-        _JOBS[job_id]["origname"] = vf.filename
         if not app.config.get("TESTING"):
             print(f"[auto] job {job_id} đã tạo, trả 202", flush=True)
         return jsonify(job_id=job_id), 202
@@ -179,49 +178,6 @@ def create_app(jobs_root: str | None = None) -> Flask:
         def work(on_progress):
             return pipeline.process_merge(vpath, spath, d, offset, mode,
                                           on_progress, lang, model, style)
-
-        job_id = _start_job(work)
-        _JOBS[job_id]["dir"] = d
-        _JOBS[job_id]["origname"] = vf.filename
-        return jsonify(job_id=job_id), 202
-
-    # ------------------------------------------------ Đọc văn bản -> giọng nói
-    @app.get("/api/tts/voices")
-    def api_tts_voices():
-        try:
-            return jsonify(tts.list_voices())
-        except tts.TTSUnavailable as e:
-            return jsonify(error=str(e)), 503
-
-    @app.post("/api/tts/preview")
-    def api_tts_preview():
-        data = request.get_json(silent=True) or {}
-        text = (data.get("text") or "").strip() or "Xin chào, đây là giọng đọc thử nghiệm."
-        voice = data.get("voice") or ""
-        if not voice:
-            return jsonify(error="Chưa chọn giọng."), 400
-        try:
-            wav = tts.synthesize(text[:200], voice)   # preview ngắn cho nhanh
-        except tts.TTSUnavailable as e:
-            return jsonify(error=str(e)), 503
-        return Response(wav, mimetype="audio/wav")
-
-    @app.post("/api/tts")
-    def api_tts():
-        busy = _reject_if_busy()
-        if busy:
-            return busy
-        data = request.get_json(silent=True) or {}
-        text = (data.get("text") or "").strip()
-        voice = data.get("voice") or ""
-        if not text:
-            return jsonify(error="Chưa nhập nội dung."), 400
-        if not voice:
-            return jsonify(error="Chưa chọn giọng."), 400
-        d = _job_dir(uuid.uuid4().hex[:12])
-
-        def work(on_progress):
-            return tts.process_tts(text, voice, d, on_progress)
 
         job_id = _start_job(work)
         _JOBS[job_id]["dir"] = d
@@ -268,18 +224,10 @@ def create_app(jobs_root: str | None = None) -> Flask:
         job = _JOBS.get(job_id)
         if not job or not job.get("result"):
             return jsonify(error="chưa có kết quả"), 404
-        path = job["result"].get(kind)
+        path = job["result"].get("video" if kind == "video" else "srt")
         if not path or not os.path.exists(path):
             return jsonify(error="file không tồn tại"), 404
-        # tên tải về = <tên file gốc>_sub.<đuôi>  (vd myvideo.mp4 -> myvideo_sub.mp4/.srt)
-        orig = job.get("origname")
-        ext = os.path.splitext(path)[1]
-        if orig:
-            stem = os.path.splitext(os.path.basename(orig))[0]
-            dl_name = f"{stem}_sub{ext}"
-        else:
-            dl_name = os.path.basename(path)
-        return send_file(path, as_attachment=True, download_name=dl_name)
+        return send_file(path, as_attachment=True, download_name=os.path.basename(path))
 
     @app.post("/api/jobs/<job_id>/delete")
     def api_delete(job_id):
