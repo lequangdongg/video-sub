@@ -249,7 +249,7 @@ function applyStylePreview() {
 const PRESETS = {
   outline: { fill: "#ffffff", bold: true, outline: "1.2", outline_color: "#000000", outline_op: "1", box: false },
   thin:    { fill: "#ffffff", bold: true, outline: "0.7", outline_color: "#000000", outline_op: "1", box: false },
-  box:     { fill: "#ffffff", bold: true, outline: "0", outline_color: "#000000", outline_op: "1", box: true, box_color: "#808080", box_op: "0.3" },
+  box:     { fill: "#ffffff", bold: true, outline: "0", outline_color: "#000000", outline_op: "1", box: true, box_color: "#000000", box_op: "0.45" },
   yellow:  { fill: "#ffdd00", bold: true, outline: "1.2", outline_color: "#000000", outline_op: "1", box: false },
 };
 
