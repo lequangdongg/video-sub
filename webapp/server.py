@@ -148,6 +148,7 @@ def create_app(jobs_root: str | None = None) -> Flask:
 
         job_id = _start_job(work)
         _JOBS[job_id]["dir"] = d
+        _JOBS[job_id]["origname"] = vf.filename
         if not app.config.get("TESTING"):
             print(f"[auto] job {job_id} đã tạo, trả 202", flush=True)
         return jsonify(job_id=job_id), 202
@@ -181,6 +182,7 @@ def create_app(jobs_root: str | None = None) -> Flask:
 
         job_id = _start_job(work)
         _JOBS[job_id]["dir"] = d
+        _JOBS[job_id]["origname"] = vf.filename
         return jsonify(job_id=job_id), 202
 
     # ------------------------------------------------ Đọc văn bản -> giọng nói
@@ -269,7 +271,15 @@ def create_app(jobs_root: str | None = None) -> Flask:
         path = job["result"].get(kind)
         if not path or not os.path.exists(path):
             return jsonify(error="file không tồn tại"), 404
-        return send_file(path, as_attachment=True, download_name=os.path.basename(path))
+        # tên tải về = <tên file gốc>_sub.<đuôi>  (vd myvideo.mp4 -> myvideo_sub.mp4/.srt)
+        orig = job.get("origname")
+        ext = os.path.splitext(path)[1]
+        if orig:
+            stem = os.path.splitext(os.path.basename(orig))[0]
+            dl_name = f"{stem}_sub{ext}"
+        else:
+            dl_name = os.path.basename(path)
+        return send_file(path, as_attachment=True, download_name=dl_name)
 
     @app.post("/api/jobs/<job_id>/delete")
     def api_delete(job_id):

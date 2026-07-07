@@ -135,6 +135,4 @@ def process_tts(text: str, voice: str, job_dir: str, on_progress=None) -> dict:
     _concat_to_mp3(wavs, mp3)
     srt = os.path.join(job_dir, "output.srt")
     subtitles.write_srt(cues, srt)
-    if on_progress:
-        on_progress("Hoàn tất", 100.0)
     return {"audio": mp3, "srt": srt}

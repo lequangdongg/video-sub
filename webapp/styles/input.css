@@ -173,6 +173,9 @@
   .preset { font-family: var(--display); font-weight: 600; font-size: 12.5px; height: 34px; padding: 0 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
   .preset:hover { border-color: #3a4a73; color: var(--text); }
   .preset.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  textarea.control { min-height: 104px; resize: vertical; line-height: 1.5; padding: 11px 12px; font-family: var(--body); }
+  .tts-player { width: 100%; margin-bottom: 6px; border-radius: var(--r-sm); }
+  .hint code { font-family: var(--mono); font-size: 11.5px; background: var(--surface-2); border: 1px solid var(--line); padding: 1px 6px; border-radius: 6px; }
   .style-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); }
   @media (min-width: 560px) { .style-grid { grid-template-columns: repeat(3, 1fr); } }
   .toggles { display: flex; gap: 8px; }
