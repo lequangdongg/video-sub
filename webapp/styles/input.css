@@ -168,6 +168,11 @@
   .style-head { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
   .style-head .ttl { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
   .style-head .ln { flex: 1; height: 1px; background: var(--line); }
+  .preset-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -4px 0 16px; }
+  .preset-lbl { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-right: 2px; }
+  .preset { font-family: var(--display); font-weight: 600; font-size: 12.5px; height: 34px; padding: 0 14px; border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface-2); color: var(--muted); cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+  .preset:hover { border-color: #3a4a73; color: var(--text); }
+  .preset.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
   .style-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, 1fr); }
   @media (min-width: 560px) { .style-grid { grid-template-columns: repeat(3, 1fr); } }
   .toggles { display: flex; gap: 8px; }

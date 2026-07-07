@@ -44,6 +44,19 @@ def video_duration(path: str) -> float:
         return 0.0
 
 
+def video_dimensions(path: str) -> tuple[int, int]:
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0",
+         "-show_entries", "stream=width,height",
+         "-of", "csv=p=0:s=x", path],
+        capture_output=True, text=True).stdout.strip()
+    try:
+        w, h = (int(x) for x in out.split("x")[:2])
+        return w, h
+    except (ValueError, IndexError):
+        return 1920, 1080
+
+
 def extract_audio(video: str, wav_out: str) -> None:
     subprocess.run(
         ["ffmpeg", "-y", "-loglevel", "error", "-i", video,
@@ -158,21 +171,189 @@ def build_force_style(style: dict | None) -> str:
         parts.append("Italic=-1")
     if style.get("fill"):
         parts.append(f"PrimaryColour={hex_to_ass(style['fill'])}")
-    if style.get("outline") is not None and style.get("outline") != "":
-        parts.append(f"Outline={style['outline']}")
-    if style.get("outline_color"):
-        op = float(style.get("outline_opacity", 1.0) or 1.0)
-        parts.append(f"OutlineColour={hex_to_ass(style['outline_color'], 1.0 - op)}")
     if style.get("box"):
+        # Nền hộp (giống Background của Premiere): BorderStyle=3 TÔ hộp bằng
+        # OutlineColour (không phải BackColour), kích thước hộp = Outline (đệm).
+        # Outline=0 -> hộp biến mất, nên luôn để đệm > 0.
         parts.append("BorderStyle=3")
-        if style.get("box_color"):
-            opacity = float(style.get("box_opacity", 1.0))
-            parts.append(f"BackColour={hex_to_ass(style['box_color'], 1.0 - opacity)}")
+        parts.append("Shadow=0")
+        box_color = style.get("box_color") or "#000000"
+        op = float(style.get("box_opacity", 1.0) or 1.0)
+        parts.append(f"OutlineColour={hex_to_ass(box_color, 1.0 - op)}")
+        try:
+            pad = float(style.get("outline"))
+        except (TypeError, ValueError):
+            pad = 0.0
+        parts.append(f"Outline={pad if pad > 0 else 4}")
+    else:
+        # Viền chữ thường (stroke)
+        if style.get("outline") is not None and style.get("outline") != "":
+            parts.append(f"Outline={style['outline']}")
+        if style.get("outline_color"):
+            op = float(style.get("outline_opacity", 1.0) or 1.0)
+            parts.append(f"OutlineColour={hex_to_ass(style['outline_color'], 1.0 - op)}")
     if style.get("align") in _ALIGN:
         parts.append(f"Alignment={_ALIGN[style['align']]}")
     if style.get("margin") not in (None, ""):
         parts.append(f"MarginV={int(float(style['margin']))}")
     return ",".join(parts)
+
+
+# ---------------------------------------------------------------- nền băng ngang (1 khối)
+# libass vẽ hộp opaque theo TỪNG dòng -> nhiều dòng thành hình bậc thang ("nhiều cụm").
+# Muốn 1 dải nền liền chạy ngang, ta tự sinh file .ass và vẽ 1 hình chữ nhật phía sau.
+
+_PLAYRES_Y = 288  # giữ nguyên ý nghĩa cỡ chữ như force_style hiện tại
+
+
+def _ass_time(t: float) -> str:
+    if t < 0:
+        t = 0.0
+    cs = int(round(t * 100))
+    h, cs = divmod(cs, 360000)
+    m, cs = divmod(cs, 6000)
+    s, cs = divmod(cs, 100)
+    return f"{h}:{m:02d}:{s:02d}.{cs:02d}"
+
+
+def _ass_bgr(hexcolor: str) -> str:
+    """#RRGGBB -> &Hbbggrr& (dùng cho \\1c trong drawing)."""
+    h = hexcolor.lstrip("#")
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    return f"&H{h[4:6].upper()}{h[2:4].upper()}{h[0:2].upper()}&"
+
+
+def _ass_alpha(opacity: float) -> str:
+    aa = max(0, min(255, round((1.0 - opacity) * 255)))
+    return f"&H{aa:02X}&"
+
+
+# Bề rộng ký tự (theo loại) để hộp ôm SÁT chữ, co giãn động theo nội dung thật
+# thay vì một hệ số cố định. Đơn vị: phần của cỡ chữ (px).
+_W_NARROW = set("iíìỉĩịl.,:;!'|`ftjr()[]")
+_W_WIDE = set("mwMW@")
+
+
+def _char_frac(ch: str, bold: bool) -> float:
+    if ch == " ":
+        f = 0.30
+    elif ch in _W_NARROW:
+        f = 0.32
+    elif ch in _W_WIDE:
+        f = 0.60
+    elif ch.isdigit():
+        f = 0.42
+    elif ch.isupper():
+        f = 0.52
+    else:
+        f = 0.40
+    return f * (1.04 if bold else 1.0)
+
+
+def _line_width(text: str, fontpx: float, bold: bool) -> float:
+    return fontpx * sum(_char_frac(c, bold) for c in text)
+
+
+def _wrap_width(text: str, fontpx: float, bold: bool, max_w: float) -> list[str]:
+    words = text.replace("\n", " ").split()
+    if not words:
+        return [""]
+    lines, cur = [], ""
+    for w in words:
+        trial = (cur + " " + w).strip()
+        if not cur or _line_width(trial, fontpx, bold) <= max_w:
+            cur = trial
+        else:
+            lines.append(cur)
+            cur = w
+    if cur:
+        lines.append(cur)
+    return lines
+
+
+def write_band_ass(cues, ass_path: str, style: dict, width: int, height: int) -> None:
+    """Sinh .ass với 1 dải nền băng ngang liền phía sau chữ (mỗi cue 1 dải)."""
+    play_x = max(320, round(_PLAYRES_Y * width / max(1, height)))
+    font = style.get("font") or "UTM Avo"
+    fontpx = float(style.get("size") or 16)
+    bold = -1 if style.get("bold") else 0
+    italic = -1 if style.get("italic") else 0
+    primary = hex_to_ass(style.get("fill") or "#ffffff")
+    outline_col = hex_to_ass(style.get("outline_color") or "#000000")
+    try:
+        outline_w = float(style.get("outline") or 0)
+    except (TypeError, ValueError):
+        outline_w = 0.0
+    align = _ALIGN.get(style.get("align"), 2)
+    try:
+        margin_v = int(float(style.get("margin") or 24))
+    except (TypeError, ValueError):
+        margin_v = 24
+    band_bgr = _ass_bgr(style.get("box_color") or "#000000")
+    band_a = _ass_alpha(float(style.get("box_opacity", 1.0) or 1.0))
+
+    is_bold = bool(style.get("bold"))
+    to_units = _PLAYRES_Y / max(1, height)     # đổi px video -> đơn vị script
+    side = max(10, round(play_x * 0.04))       # giới hạn bề rộng tối đa của hộp
+    pad_x = max(1.5, 5 * to_units)             # đệm ngang ~5px video (ôm sát chữ)
+    pad_top = max(2.0, 8 * to_units)           # đệm trên (chừa dấu thanh)
+    pad_bot = max(1.5, 5 * to_units)
+    max_box_w = play_x - 2 * side
+    max_text_w = max_box_w - 2 * pad_x
+    line_h = fontpx * 1.22
+
+    header = (
+        "[Script Info]\n"
+        "ScriptType: v4.00+\n"
+        f"PlayResX: {play_x}\n"
+        f"PlayResY: {_PLAYRES_Y}\n"
+        "WrapStyle: 2\n"
+        "ScaledBorderAndShadow: yes\n\n"
+        "[V4+ Styles]\n"
+        "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
+        "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, "
+        "ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, "
+        "MarginL, MarginR, MarginV, Encoding\n"
+        f"Style: Text,{font},{fontpx:g},{primary},&H000000FF,{outline_col},"
+        f"&H00000000,{bold},{italic},0,0,100,100,0,0,1,{outline_w:g},0,{align},"
+        f"{side},{side},{margin_v},1\n\n"
+        "[Events]\n"
+        "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, "
+        "Effect, Text\n"
+    )
+
+    lines_out = []
+    for c in cues:
+        text = (c.text or "").replace("{", "(").replace("}", ")")
+        wrapped = _wrap_width(text, fontpx, is_bold, max_text_w)
+        n = len(wrapped)
+        block_h = n * line_h
+        # hộp ôm sát chữ: rộng theo bề rộng THẬT của dòng dài nhất + đệm, căn giữa
+        text_w = max((_line_width(ln, fontpx, is_bold) for ln in wrapped), default=0)
+        box_w = min(max_box_w, text_w + 2 * pad_x)
+        x1 = round((play_x - box_w) / 2)
+        x2 = round(x1 + box_w)
+        if align == 8:      # top
+            y1 = margin_v - pad_top
+            y2 = margin_v + block_h + pad_bot
+        elif align == 5:    # middle
+            cy = _PLAYRES_Y / 2
+            y1 = cy - block_h / 2 - pad_top
+            y2 = cy + block_h / 2 + pad_bot
+        else:               # bottom
+            yb = _PLAYRES_Y - margin_v
+            y1 = yb - block_h - pad_top
+            y2 = yb + pad_bot
+        iy1, iy2 = round(y1), round(y2)
+        band = (f"{{\\p1\\an7\\pos(0,0)\\1c{band_bgr}\\1a{band_a}\\bord0\\shad0}}"
+                f"m {x1} {iy1} l {x2} {iy1} {x2} {iy2} {x1} {iy2}{{\\p0}}")
+        st, en = _ass_time(c.start), _ass_time(c.end)
+        lines_out.append(f"Dialogue: 0,{st},{en},Text,,0,0,0,,{band}")
+        lines_out.append(f"Dialogue: 1,{st},{en},Text,,0,0,0,,{'\\N'.join(wrapped)}")
+
+    with open(ass_path, "w", encoding="utf-8") as f:
+        f.write(header + "\n".join(lines_out) + "\n")
 
 
 def _run_ffmpeg_progress(cmd: list[str], total: float, step: str, on_progress=None) -> None:
@@ -210,10 +391,17 @@ def burn_or_mux(video: str, srt: str, mode: str, out_path: str, on_progress=None
                 "Chạy ./install.sh hoặc chọn sub mềm.")
         def _escfilt(p):
             return p.replace("\\", "\\\\").replace("'", r"\'").replace(":", r"\:")
-        sub_opt = f"f='{_escfilt(srt)}'"
-        fs = build_force_style(style)
-        if fs:
-            sub_opt += f":force_style='{fs}'"
+        # Nền băng ngang (1 khối): tự sinh .ass vẽ dải nền liền, thay cho hộp per-dòng.
+        if style and style.get("box"):
+            w, h = video_dimensions(video)
+            ass_path = (srt[:-4] if srt.lower().endswith(".srt") else srt) + ".ass"
+            write_band_ass(subtitles.parse_srt(srt), ass_path, style, w, h)
+            sub_opt = f"f='{_escfilt(ass_path)}'"
+        else:
+            sub_opt = f"f='{_escfilt(srt)}'"
+            fs = build_force_style(style)
+            if fs:
+                sub_opt += f":force_style='{fs}'"
         # dùng font đi kèm repo (không cần cài vào máy)
         if os.path.isdir(FONTS_DIR):
             sub_opt += f":fontsdir='{_escfilt(FONTS_DIR)}'"

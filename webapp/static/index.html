@@ -128,6 +128,13 @@
     <!-- subtitle styling (burn-in only) -->
     <section class="card style-panel hidden" id="style-panel">
       <div class="style-head"><span class="ttl">Kiểu chữ phụ đề · cháy vào hình</span><span class="ln"></span></div>
+      <div class="preset-row" id="style-presets">
+        <span class="preset-lbl">Mẫu</span>
+        <button type="button" class="preset" data-preset="outline">Viền đen</button>
+        <button type="button" class="preset" data-preset="thin">Viền mảnh</button>
+        <button type="button" class="preset active" data-preset="box">Nền (Premiere)</button>
+        <button type="button" class="preset" data-preset="yellow">Vàng viền đen</button>
+      </div>
       <div class="style-grid">
         <div class="field">
           <label>Font</label>
@@ -179,7 +186,7 @@
         </div>
         <div class="field">
           <label>Độ dày viền</label>
-          <input class="control" id="st-outline" type="number" value="0.65" min="0" step="0.05">
+          <input class="control" id="st-outline" type="number" value="0" min="0" step="0.05">
         </div>
         <div class="field">
           <label>Độ mờ viền</label>
@@ -201,12 +208,12 @@
           <label>Nền chữ</label>
           <div class="inline">
             <button type="button" class="toggle" id="st-box" aria-pressed="true" title="Bật nền">Nền</button>
-            <input class="swatch" id="st-box-color" type="color" value="#4d4d4d" style="max-width:64px">
+            <input class="swatch" id="st-box-color" type="color" value="#808080" style="max-width:64px">
           </div>
         </div>
         <div class="field">
           <label>Độ mờ nền</label>
-          <input class="range" id="st-box-op" type="range" min="0" max="1" step="0.05" value="0.6">
+          <input class="range" id="st-box-op" type="range" min="0" max="1" step="0.05" value="0.3">
         </div>
       </div>
     </section>

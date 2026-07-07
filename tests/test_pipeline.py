@@ -86,14 +86,16 @@ def test_build_force_style_basic():
 
 
 def test_build_force_style_box_align_outline():
+    # BorderStyle=3 tô hộp nền bằng OutlineColour (không phải BackColour),
+    # kích thước hộp lấy từ Outline.
     fs = pipeline.build_force_style({
-        "box": True, "box_color": "#000000", "box_opacity": 1.0,
-        "align": "top", "outline": 3, "outline_color": "#000000"})
+        "box": True, "box_color": "#334455", "box_opacity": 1.0,
+        "align": "top", "outline": 3})
     assert "BorderStyle=3" in fs
-    assert "BackColour=&H00000000" in fs
+    assert "Shadow=0" in fs
+    assert "OutlineColour=&H00554433" in fs   # màu hộp = box_color, đục hoàn toàn
     assert "Alignment=8" in fs
     assert "Outline=3" in fs
-    assert "OutlineColour=&H00000000" in fs
 
 
 def test_build_force_style_empty():

@@ -204,17 +204,23 @@ function applyStylePreview() {
   span.style.color = s.fill || "#fff";
   const oc = s.outline_color || "#000000";
   const oop = s.outline_opacity == null ? 1 : parseFloat(s.outline_opacity);
-  const ocol = `rgba(${parseInt(oc.slice(1, 3), 16)},${parseInt(oc.slice(3, 5), 16)},${parseInt(oc.slice(5, 7), 16)},${oop})`;
+  const or = parseInt(oc.slice(1, 3), 16), og = parseInt(oc.slice(3, 5), 16), ob = parseInt(oc.slice(5, 7), 16);
+  const ocol = `rgba(${or},${og},${ob},${oop})`;
+  const soft = `0 2px 6px rgba(${or},${og},${ob},${0.9 * oop})`;   // bóng đổ ăn theo màu viền
   const w = parseFloat(s.outline || 0) * scale * 0.5;
   span.style.textShadow = w > 0
-    ? `-${w}px -${w}px 0 ${ocol}, ${w}px -${w}px 0 ${ocol}, -${w}px ${w}px 0 ${ocol}, ${w}px ${w}px 0 ${ocol}, 0 2px 6px rgba(0,0,0,.9)`
-    : "0 2px 6px rgba(0,0,0,.9)";
+    ? `-${w}px -${w}px 0 ${ocol}, ${w}px -${w}px 0 ${ocol}, -${w}px ${w}px 0 ${ocol}, ${w}px ${w}px 0 ${ocol}, ${soft}`
+    : soft;
+  cap.style.background = "transparent";
+  cap.style.padding = "0";
   if (s.box) {
+    // hộp nền ôm sát chữ, đệm nhỏ — khớp với video burn
     const op = parseFloat(s.box_opacity);
     const c = s.box_color;
     const r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
     span.style.background = `rgba(${r},${g},${b},${op})`;
-    span.style.padding = "2px 8px";
+    span.style.padding = "4px 6px";   // ~4px, ôm sát chữ (span inline-block tự bám text)
+    span.style.borderRadius = "0";
     span.style.boxDecorationBreak = "clone";
     span.style.webkitBoxDecorationBreak = "clone";
   } else {
@@ -238,6 +244,32 @@ function applyStylePreview() {
 // live preview on any style change
 ["st-font", "st-size", "st-fill", "st-outline", "st-outline-color", "st-outline-op", "st-align", "st-margin", "st-box-color", "st-box-op"]
   .forEach((id) => $(id).addEventListener("input", applyStylePreview));
+
+// mẫu (presets) — chữ trắng đậm + viền đen là kiểu phổ biến trong 2 ảnh
+const PRESETS = {
+  outline: { fill: "#ffffff", bold: true, outline: "1.2", outline_color: "#000000", outline_op: "1", box: false },
+  thin:    { fill: "#ffffff", bold: true, outline: "0.7", outline_color: "#000000", outline_op: "1", box: false },
+  box:     { fill: "#ffffff", bold: true, outline: "0", outline_color: "#000000", outline_op: "1", box: true, box_color: "#808080", box_op: "0.3" },
+  yellow:  { fill: "#ffdd00", bold: true, outline: "1.2", outline_color: "#000000", outline_op: "1", box: false },
+};
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  if (!p) return;
+  $("st-fill").value = p.fill;
+  $("st-outline").value = p.outline;
+  $("st-outline-color").value = p.outline_color;
+  $("st-outline-op").value = p.outline_op;
+  $("st-bold").setAttribute("aria-pressed", String(!!p.bold));
+  $("st-box").setAttribute("aria-pressed", String(!!p.box));
+  if (p.box_color) $("st-box-color").value = p.box_color;
+  if (p.box_op) $("st-box-op").value = p.box_op;
+  document.querySelectorAll("#style-presets .preset")
+    .forEach((b) => b.classList.toggle("active", b.dataset.preset === name));
+  applyStylePreview();
+}
+document.querySelectorAll("#style-presets .preset")
+  .forEach((b) => b.addEventListener("click", () => applyPreset(b.dataset.preset)));
 // show/hide panel on mode change
 ["auto-mode", "merge-mode"].forEach((id) => $(id).addEventListener("change", updateStylePanel));
 
