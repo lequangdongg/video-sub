@@ -82,6 +82,26 @@ python3 -c "import urllib.request,os;d=os.path.expanduser('~/whisper-models');os
 | small            | Vừa       | Khá          | ~460MB     |
 | medium           | Chậm      | Tốt          | ~1.5GB     |
 | large-v3-turbo   | Nhanh     | Rất tốt      | ~1.6GB     |
+| large-v3         | Chậm      | **Cao nhất** | ~3GB       |
+
+Tải `large-v3` (chính xác nhất, cho tiếng Việt khó/nhiều thuật ngữ):
+```bash
+MODEL=large-v3 ./install.sh
+```
+rồi chọn **large-v3** ở ô Model trong web.
+
+## Sửa từ bị nhận nhầm
+
+Whisper đôi khi nghe sai (nhất là dấu thanh, vd *nôn mửa* → *nôn mưởng*). Có 2 cách:
+
+1. **Từ điển sửa** — mở [`webapp/corrections.txt`](webapp/corrections.txt), thêm dòng `sai => đúng`:
+   ```
+   nôn mưởng => nôn mửa
+   thành phố hồ chí mih => Thành phố Hồ Chí Minh
+   ```
+   Áp dụng tự động cho mọi sub tạo mới (không phân biệt hoa/thường, giữ hoa chữ đầu).
+2. **Model `large-v3`** — chính xác hơn `turbo` cho câu khó.
+3. **Gợi ý từ vựng** (tuỳ chọn): `WHISPER_PROMPT="tên riêng, thuật ngữ hay dùng" ./web.sh` để bias nhận diện.
 
 ## Tăng tốc cho video lớn (vài GB)
 

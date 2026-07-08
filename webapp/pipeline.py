@@ -15,6 +15,12 @@ THREADS = os.environ.get("WHISPER_THREADS", "8")
 ENCODER = os.environ.get("ENCODER", "hardware")      # hardware|software
 VT_QUALITY = os.environ.get("VT_QUALITY", "60")
 X264_CRF = os.environ.get("X264_CRF", "20")
+# gợi ý từ vựng cho whisper (bias nhận diện đúng hơn); để trống là tắt
+WHISPER_PROMPT = os.environ.get("WHISPER_PROMPT", "")
+# từ điển sửa lỗi whisper hay nghe nhầm (mỗi dòng: sai => đúng)
+CORRECTIONS_FILE = os.environ.get(
+    "CORRECTIONS_FILE",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "corrections.txt"))
 
 TIMED_EXTS = (".srt", ".vtt", ".ass")
 
@@ -73,15 +79,50 @@ def _whisper_percent(line: str) -> float | None:
     return float(m.group(1)) if m else None
 
 
+def _load_corrections() -> list[tuple[str, str]]:
+    """Đọc file corrections.txt: mỗi dòng 'sai => đúng' (# là ghi chú)."""
+    pairs: list[tuple[str, str]] = []
+    try:
+        with open(CORRECTIONS_FILE, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=>" not in line:
+                    continue
+                wrong, right = (p.strip() for p in line.split("=>", 1))
+                if wrong:
+                    pairs.append((wrong, right))
+    except FileNotFoundError:
+        pass
+    return pairs
+
+
+def apply_corrections(srt_path: str) -> None:
+    """Thay các cụm whisper hay nghe nhầm trong file .srt (giữ hoa chữ đầu)."""
+    pairs = _load_corrections()
+    if not pairs:
+        return
+    text = open(srt_path, encoding="utf-8").read()
+    for wrong, right in pairs:
+        def _repl(m, right=right):
+            s = m.group(0)
+            return right[:1].upper() + right[1:] if s[:1].isupper() else right
+        text = re.sub(re.escape(wrong), _repl, text, flags=re.IGNORECASE)
+    with open(srt_path, "w", encoding="utf-8") as f:
+        f.write(text)
+
+
 def transcribe(audio: str, lang: str, model: str, srt_out: str, on_progress=None) -> None:
     mp = model_path(model)
     if not os.path.exists(mp):
         raise FileNotFoundError(f"Thiếu model whisper: {mp}. Chạy ./install.sh")
     base = srt_out[:-4] if srt_out.endswith(".srt") else srt_out
-    proc = subprocess.Popen(
-        ["whisper-cli", "-m", mp, "-l", lang, "-t", THREADS, "-fa", "-pp",
-         "-osrt", "-of", base, "-f", audio],
-        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=True)
+    cmd = ["whisper-cli", "-m", mp, "-l", lang, "-t", THREADS,
+           "-bs", "5", "-bo", "5", "-fa", "-pp",   # beam search 5 -> nhận diện chính xác hơn
+           "-osrt", "-of", base, "-f", audio]
+    if WHISPER_PROMPT:
+        cmd += ["--prompt", WHISPER_PROMPT]
+    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
+                            stderr=subprocess.PIPE, text=True)
     for line in proc.stderr:
         pct = _whisper_percent(line)
         if pct is not None and on_progress:
@@ -89,6 +130,7 @@ def transcribe(audio: str, lang: str, model: str, srt_out: str, on_progress=None
     proc.wait()
     if proc.returncode != 0 or not os.path.exists(srt_out):
         raise RuntimeError("whisper-cli thất bại")
+    apply_corrections(srt_out)      # sửa các từ whisper hay nghe nhầm
 
 
 def parse_word_timings(obj: dict) -> list[tuple[str, float, float]]:

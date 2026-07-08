@@ -1,0 +1,6 @@
+# Từ điển sửa lỗi nhận diện (whisper hay nghe nhầm tiếng Việt).
+# Mỗi dòng:  <cụm sai> => <cụm đúng>
+# Dòng bắt đầu bằng # là ghi chú. Không phân biệt hoa/thường; tự giữ hoa chữ đầu câu.
+# Thêm dòng mới cho bất kỳ từ nào bị sai lặp lại.
+
+nôn mưởng => nôn mửa
