@@ -9,7 +9,7 @@ set -euo pipefail
 
 # ===================== CẤU HÌNH (chỉnh ở đây) =====================
 LANG_CODE="vi"                 # mã ngôn ngữ NÓI trong video: vi, en, ja, ko, zh, auto...
-MODEL="large-v3-turbo"         # tiny | base | small | medium | large-v3 | large-v3-turbo
+MODEL="large-v3"               # tiny | base | small | medium | large-v3 (chính xác nhất) | large-v3-turbo (nhanh)
 MODE="burn"                    # burn (cứng) | soft (mềm) | srt (chỉ xuất .srt)
 
 # --- Tăng tốc ---

@@ -8,16 +8,17 @@
 #         -> chmod script -> tạo thư mục input/ output/
 #
 # Tùy chọn (biến môi trường):
-#   MODEL=medium ./install.sh        # đổi model whisper tải về (mặc định large-v3-turbo)
-#   SKIP_LIBASS=1 ./install.sh       # KHÔNG build ffmpeg-libass (chỉ dùng sub mềm/srt, cài nhanh)
+#   MODEL="large-v3-turbo" ./install.sh          # tải model nhẹ/nhanh hơn
+#   MODEL="large-v3 large-v3-turbo" ./install.sh  # tải NHIỀU model (cách nhau bởi dấu cách)
+#   SKIP_LIBASS=1 ./install.sh                    # KHÔNG build ffmpeg-libass (chỉ sub mềm/srt)
 #
 set -euo pipefail
 
-MODEL="${MODEL:-large-v3-turbo}"
+# Mặc định large-v3: chậm nhưng chính xác nhất. Máy yếu thì dùng MODEL="large-v3-turbo".
+MODEL="${MODEL:-large-v3}"
 MODELS_DIR="${WHISPER_MODELS_DIR:-$HOME/whisper-models}"
 SKIP_LIBASS="${SKIP_LIBASS:-0}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MODEL_BIN="$MODELS_DIR/ggml-$MODEL.bin"
 
 say(){ printf "\n\033[1;36m==> %s\033[0m\n" "$1"; }
 err(){ printf "\033[1;31m[LỖI] %s\033[0m\n" "$1" >&2; }
@@ -67,21 +68,24 @@ else
   brew install homebrew-ffmpeg/ffmpeg/ffmpeg
 fi
 
-# ---- 4. Model whisper ----
-if [[ -f "$MODEL_BIN" ]]; then
-  say "Model đã có: $MODEL_BIN"
-else
-  say "Tải model whisper ($MODEL)..."
-  mkdir -p "$MODELS_DIR"
-  URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-$MODEL.bin"
-  if curl -L --fail -o "$MODEL_BIN.part" "$URL"; then
-    mv "$MODEL_BIN.part" "$MODEL_BIN"
+# ---- 4. Model whisper (tải 1 hoặc nhiều model, cách nhau bởi dấu cách/phẩy) ----
+mkdir -p "$MODELS_DIR"
+for m in ${MODEL//,/ }; do
+  bin="$MODELS_DIR/ggml-$m.bin"
+  if [[ -f "$bin" ]]; then
+    say "Model đã có: $bin"
   else
-    rm -f "$MODEL_BIN.part"
-    err "Tải model thất bại. Thử lại hoặc tải tay từ: $URL"
-    exit 1
+    say "Tải model whisper ($m)... (large-v3 ~3GB, lâu)"
+    URL="https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-$m.bin"
+    if curl -L --fail -o "$bin.part" "$URL"; then
+      mv "$bin.part" "$bin"
+    else
+      rm -f "$bin.part"
+      err "Tải model '$m' thất bại. Thử lại hoặc tải tay từ: $URL"
+      exit 1
+    fi
   fi
-fi
+done
 
 # ---- 5. Quyền chạy + thư mục ----
 chmod +x "$SCRIPT_DIR"/*.sh 2>/dev/null || true   # tất cả script (run/web/serve/start/clean/sub/tunnel)
@@ -106,7 +110,9 @@ if command -v whisper-cli >/dev/null 2>&1; then echo "  ✓ whisper-cli"; else e
 if has_libass; then echo "  ✓ ffmpeg (libass) — burn-in OK"
 elif command -v ffmpeg >/dev/null 2>&1; then echo "  ⚠ ffmpeg KHÔNG libass — chỉ sub mềm/srt"
 else echo "  ✗ ffmpeg"; ok=0; fi
-if [[ -f "$MODEL_BIN" ]]; then echo "  ✓ model $MODEL"; else echo "  ✗ model"; ok=0; fi
+for m in ${MODEL//,/ }; do
+  if [[ -f "$MODELS_DIR/ggml-$m.bin" ]]; then echo "  ✓ model $m"; else echo "  ✗ model $m"; ok=0; fi
+done
 if "$SCRIPT_DIR/.venv/bin/python" -c "import flask" >/dev/null 2>&1; then echo "  ✓ venv + Flask (web sẵn sàng)"; else echo "  ✗ venv/Flask"; ok=0; fi
 
 if [[ $ok -eq 1 ]]; then

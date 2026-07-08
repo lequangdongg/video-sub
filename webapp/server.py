@@ -129,7 +129,7 @@ def create_app(jobs_root: str | None = None) -> Flask:
             offset = 0.0
         opts = {
             "language": request.form.get("language", "vi"),
-            "model": request.form.get("model", "large-v3-turbo"),
+            "model": request.form.get("model", "large-v3"),
             "mode": request.form.get("mode", "burn"),
             "offset": offset,
             "style": _style_from_form(request.form) if request.form.get("mode") == "burn" else None,
@@ -165,7 +165,7 @@ def create_app(jobs_root: str | None = None) -> Flask:
             offset = 0.0
         mode = request.form.get("mode", "burn")
         lang = request.form.get("language", "vi")
-        model = request.form.get("model", "large-v3-turbo")
+        model = request.form.get("model", "large-v3")
         style = _style_from_form(request.form) if mode == "burn" else None
         d = _job_dir(uuid.uuid4().hex[:12])
         vf = request.files["video"]

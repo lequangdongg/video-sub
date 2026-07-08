@@ -25,7 +25,7 @@ Chạy được nhiều video một lúc — cứ bỏ hết vào `input/`.
 
 ```bash
 LANG_CODE="vi"            # mã ngôn ngữ NÓI: vi, en, ja, ko, zh, auto...
-MODEL="large-v3-turbo"    # tiny|base|small|medium|large-v3|large-v3-turbo
+MODEL="large-v3"         # large-v3 (chính xác nhất, mặc định) | large-v3-turbo (nhanh) | medium | small
 MODE="burn"              # burn (cứng) | soft (mềm) | srt (chỉ .srt)
 ```
 
@@ -60,8 +60,9 @@ Sau khi cài xong, **chạy**:
 
 Tùy chọn:
 ```bash
-MODEL=medium ./install.sh      # đổi model tải về (mặc định large-v3-turbo)
-SKIP_LIBASS=1 ./install.sh     # KHÔNG build ffmpeg-libass: cài nhanh, chỉ dùng sub mềm/srt
+MODEL="large-v3-turbo" ./install.sh            # tải model nhẹ/nhanh hơn (mặc định là large-v3)
+MODEL="large-v3 large-v3-turbo" ./install.sh   # tải NHIỀU model (cách nhau bởi dấu cách)
+SKIP_LIBASS=1 ./install.sh                     # KHÔNG build ffmpeg-libass: cài nhanh, chỉ sub mềm/srt
 ```
 
 > ⚠️ Burn-in (sub cứng) cần `ffmpeg` **có libass**. Bản `brew install ffmpeg` (homebrew core)
@@ -82,13 +83,13 @@ python3 -c "import urllib.request,os;d=os.path.expanduser('~/whisper-models');os
 | small            | Vừa       | Khá          | ~460MB     |
 | medium           | Chậm      | Tốt          | ~1.5GB     |
 | large-v3-turbo   | Nhanh     | Rất tốt      | ~1.6GB     |
-| large-v3         | Chậm      | **Cao nhất** | ~3GB       |
+| **large-v3** ⭐  | Chậm      | **Cao nhất** | ~3GB       |
 
-Tải `large-v3` (chính xác nhất, cho tiếng Việt khó/nhiều thuật ngữ):
+**`large-v3` là mặc định** (chính xác nhất, hợp tiếng Việt khó/nhiều thuật ngữ) — `./install.sh` tự tải.
+Máy yếu / muốn nhanh hơn thì chọn **large-v3-turbo** ở ô Model trong web, hoặc:
 ```bash
-MODEL=large-v3 ./install.sh
+MODEL="large-v3-turbo" ./install.sh
 ```
-rồi chọn **large-v3** ở ô Model trong web.
 
 ## Sửa từ bị nhận nhầm
 
