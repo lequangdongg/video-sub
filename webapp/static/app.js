@@ -26,10 +26,18 @@ function fmtTc(sec) {
   return `${h}:${m}:${s},${String(ms % 1000).padStart(3, "0")}`;
 }
 
+let previewUrl = null;
 function setVideoPreview(file) {
   const mon = $("monitor"), v = $("preview");
-  if (!file) { mon.classList.remove("has-video"); v.removeAttribute("src"); $("vname").textContent = "AUTOSUB · PREVIEW"; $("tc").textContent = "00:00:00,000"; return; }
-  v.src = URL.createObjectURL(file);
+  if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+  if (!file) {
+    mon.classList.remove("has-video");
+    v.removeAttribute("src"); v.load();      // load() để xoá hẳn khung hình đang hiển thị
+    $("vname").textContent = "AUTOSUB · PREVIEW"; $("tc").textContent = "00:00:00,000";
+    return;
+  }
+  previewUrl = URL.createObjectURL(file);
+  v.src = previewUrl;
   mon.classList.add("has-video");
   $("vname").textContent = file.name;
   v.onloadedmetadata = () => { $("tc").textContent = fmtTc(v.duration); };
