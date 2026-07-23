@@ -2,6 +2,9 @@
 
 mod setup;
 mod commands;
+mod srt;
+mod ass;
+mod corrections;
 
 fn main() {
     tauri::Builder::default()

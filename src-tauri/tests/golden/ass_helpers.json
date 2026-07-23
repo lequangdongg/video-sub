@@ -1,0 +1,12 @@
+{
+  "hex_black_opaque": "&H00000000",
+  "hex_white": "&H00FFFFFF",
+  "hex_blue_semi": "&H40EB6325",
+  "bgr_black": "&H000000&",
+  "bgr_blue": "&HEB6325&",
+  "alpha_1": "&H00&",
+  "alpha_025": "&HBF&",
+  "time_0": "0:00:00.00",
+  "time_65_321": "0:01:05.32",
+  "time_neg": "0:00:00.00"
+}
