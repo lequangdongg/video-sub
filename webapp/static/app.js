@@ -398,17 +398,21 @@ if (window.__TAURI__) {
     setVideoPreviewPath(sel);
   };
 
-  // kéo-thả native của Tauri (webview DnD bị vô hiệu, dùng event tauri://)
-  T.event.listen("tauri://drag-enter", () => $("monitor").classList.add("drag"));
-  T.event.listen("tauri://drag-over", () => $("monitor").classList.add("drag"));
-  T.event.listen("tauri://drag-leave", () => $("monitor").classList.remove("drag"));
-  T.event.listen("tauri://drag-drop", (e) => {
-    $("monitor").classList.remove("drag");
-    const f = e.payload && e.payload.paths && e.payload.paths[0];
-    if (!f) return;
-    resetJob();
-    tauriVideo = f;
-    setVideoPreviewPath(f);
+  // kéo-thả native của Tauri v2 — nghe qua onDragDropEvent của webview hiện tại
+  T.webview.getCurrentWebview().onDragDropEvent((event) => {
+    const p = event.payload;
+    if (p.type === "enter" || p.type === "over") {
+      $("monitor").classList.add("drag");
+    } else if (p.type === "leave") {
+      $("monitor").classList.remove("drag");
+    } else if (p.type === "drop") {
+      $("monitor").classList.remove("drag");
+      const f = p.paths && p.paths[0];
+      if (!f) return;
+      resetJob();
+      tauriVideo = f;
+      setVideoPreviewPath(f);
+    }
   });
 
   // tiến trình: gom step giống applyStatus của web
