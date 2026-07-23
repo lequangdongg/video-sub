@@ -87,6 +87,29 @@ pipeline.apply_corrections(srt2)
 pipeline.CORRECTIONS_FILE = old
 dump("corrections.json", {"content": open(srt2, encoding="utf-8").read()})
 
+# --- word merging (parse_word_timings) ---
+wj = {"transcription": [{"tokens": [
+    {"text": "[_BEG_]", "offsets": {"from": 0, "to": 0}},
+    {"text": " một", "offsets": {"from": 0, "to": 300}},
+    {"text": " hai", "offsets": {"from": 300, "to": 600}},
+    {"text": " ba", "offsets": {"from": 600, "to": 900}},
+    {"text": " bốn", "offsets": {"from": 900, "to": 1200}},
+]}]}
+words_g = pipeline.parse_word_timings(wj)
+dump("word_timings.json", [{"text": w[0], "from": w[1], "to": w[2]} for w in words_g])
+
+# --- split_into_cue_texts ---
+dump("split_cues.json", {
+    "a": subtitles.split_into_cue_texts("Dòng một.\nDòng hai vẫn ngắn."),
+    "b": subtitles.split_into_cue_texts("Một câu. Câu hai! Câu ba?"),
+})
+
+# --- align ---
+cue_texts_g = ["một hai", "ba bốn"]
+words2 = [("một", 0.0, 0.3), ("hai", 0.3, 0.6), ("ba", 0.6, 0.9), ("bốn", 0.9, 1.2)]
+al = subtitles.align(cue_texts_g, words2)
+dump("align.json", [{"start": c.start, "end": c.end, "text": c.text} for c in al])
+
 for f in ["_in.srt", "_out.srt", "_band.ass", "_corr.txt", "_c.srt"]:
     p = os.path.join(OUT, f)
     if os.path.exists(p):

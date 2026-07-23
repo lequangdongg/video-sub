@@ -307,6 +307,7 @@ $("auto-start").onclick = () => {
 };
 
 $("merge-start").onclick = () => {
+  if (window.__TAURI__) return runMergeTauri();
   const v = $("merge-video").files[0], s = $("merge-sub").files[0];
   if (!v) return showError("Hãy chọn video.");
   if (!s) return showError("Hãy chọn file phụ đề để ghép.");
@@ -371,6 +372,7 @@ $("clear-job").onclick = () => {
 
 /* ================================================================ Tauri bridge */
 let tauriVideo = null;    // đường dẫn video đã chọn (Tauri)
+let tauriSub = null;      // đường dẫn file sub (tab Ghép sub)
 let tauriResult = null;   // {video, srt} sau khi xong
 
 if (window.__TAURI__) {
@@ -465,7 +467,49 @@ if (window.__TAURI__) {
   $("dl-video").addEventListener("click", (e) => { e.preventDefault(); saveTauri("video"); }, true);
   $("dl-srt").addEventListener("click", (e) => { e.preventDefault(); saveTauri("srt"); }, true);
 
+  // chọn file sub (tab Ghép sub) qua dialog thay vì input native
+  $("pick-merge-sub").addEventListener("click", async (e) => {
+    e.preventDefault();
+    const sel = await T.dialog.open({
+      multiple: false,
+      filters: [{ name: "Phụ đề", extensions: ["srt", "vtt", "ass", "txt", "docx"] }],
+    });
+    if (!sel) return;
+    tauriSub = sel;
+    const fp = $("pick-merge-sub");
+    fp.classList.add("set");
+    fp.querySelector(".name").textContent = basename(sel);
+  }, true);
+
+  window.runMergeTauri = async function () {
+    if (!tauriVideo) return showError("Hãy chọn video.");
+    if (!tauriSub) return showError("Hãy chọn file phụ đề để ghép.");
+    const btn = $("merge-start");
+    btn.disabled = true;
+    resetUI();
+    const mode = $("merge-mode").value;
+    const opts = {
+      language: "vi",
+      mode,
+      offset: $("merge-offset").value || "0",
+      style: mode === "burn" ? collectStyle() : null,
+    };
+    try {
+      tauriResult = await T.core.invoke("run_merge", { video: tauriVideo, sub: tauriSub, opts });
+      for (const k in stepState) stepState[k].done = true;
+      renderSteps();
+      $("result").classList.remove("hidden");
+    } catch (err) {
+      showError(String(err && err.message ? err.message : err));
+    }
+    btn.disabled = false;
+  };
+
   // xoá dropzone cũng xoá đường dẫn Tauri đang giữ
   const _origResetDropzone = resetDropzone;
-  resetDropzone = function () { tauriVideo = null; _origResetDropzone(); };
+  resetDropzone = function () {
+    tauriVideo = null;
+    tauriSub = null;
+    _origResetDropzone();
+  };
 }

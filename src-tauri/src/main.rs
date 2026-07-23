@@ -8,6 +8,7 @@ mod corrections;
 mod tools;
 mod ffmpeg;
 mod whisper;
+mod align;
 mod pipeline;
 
 fn main() {
@@ -17,6 +18,7 @@ fn main() {
             commands::check_setup,
             commands::download_model,
             commands::run_auto,
+            commands::run_merge,
             commands::save_file
         ])
         .run(tauri::generate_context!())
