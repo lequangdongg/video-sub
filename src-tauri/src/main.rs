@@ -5,13 +5,19 @@ mod commands;
 mod srt;
 mod ass;
 mod corrections;
+mod tools;
+mod ffmpeg;
+mod whisper;
+mod pipeline;
 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             commands::check_setup,
-            commands::download_model
+            commands::download_model,
+            commands::run_auto,
+            commands::save_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
