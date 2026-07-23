@@ -1,4 +1,12 @@
 "use strict";
+
+// Cổng Setup (chỉ trong Tauri): chưa có model -> chuyển sang màn tải model.
+if (window.__TAURI__) {
+  window.__TAURI__.core.invoke("check_setup").then((ready) => {
+    if (!ready) location.href = "./setup.html";
+  });
+}
+
 const $ = (id) => document.getElementById(id);
 
 let activeTab = "auto";

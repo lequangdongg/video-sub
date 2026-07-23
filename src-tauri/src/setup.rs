@@ -27,12 +27,33 @@ pub fn models_dir() -> PathBuf {
     data_dir().join("models")
 }
 
+/// Vị trí model cũ do web app / install.sh tải về (~/whisper-models).
+pub fn legacy_models_dir() -> PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join("whisper-models")
+}
+
+/// Các chỗ có thể chứa model, theo thứ tự ưu tiên: app data dir rồi tới thư mục cũ.
+pub fn model_search_paths() -> Vec<PathBuf> {
+    vec![
+        models_dir().join(model_filename()),
+        legacy_models_dir().join(model_filename()),
+    ]
+}
+
+/// Đường dẫn tải về (luôn ghi vào app data dir).
 pub fn model_path() -> PathBuf {
     models_dir().join(model_filename())
 }
 
+/// Model đang có ở đâu (nếu có) — dùng lại chỗ cũ, không tải lại.
+pub fn resolve_model_path() -> Option<PathBuf> {
+    model_search_paths().into_iter().find(|p| p.exists())
+}
+
 pub fn model_exists() -> bool {
-    model_path().exists()
+    resolve_model_path().is_some()
 }
 
 /// % tải: tỉ lệ * 100, chặn trần 100; total=0 -> 0 (chưa biết dung lượng).
@@ -96,6 +117,16 @@ mod tests {
         assert!(p
             .to_string_lossy()
             .ends_with("AutoSub/models/ggml-large-v3.bin"));
+    }
+
+    #[test]
+    fn search_paths_include_app_dir_and_legacy() {
+        let paths: Vec<String> = model_search_paths()
+            .iter()
+            .map(|p| p.to_string_lossy().into_owned())
+            .collect();
+        assert!(paths.iter().any(|p| p.ends_with("AutoSub/models/ggml-large-v3.bin")));
+        assert!(paths.iter().any(|p| p.ends_with("whisper-models/ggml-large-v3.bin")));
     }
 
     #[test]
