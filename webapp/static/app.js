@@ -70,13 +70,14 @@ $("auto-video").addEventListener("change", () => { const f = $("auto-video").fil
 $("merge-video").addEventListener("change", () => { const f = $("merge-video").files[0]; if (f) { resetJob(); setVideoPreview(f); } });
 $("merge-sub").addEventListener("change", () => markFilepick("pick-merge-sub", $("merge-sub").files[0]));
 
-$("monitor").addEventListener("click", () => activeVideoInput().click());
+$("monitor").addEventListener("click", () => { if (window.__TAURI__) pickVideoTauri(); else activeVideoInput().click(); });
 
 ["dragenter", "dragover"].forEach((ev) =>
   $("monitor").addEventListener(ev, (e) => { e.preventDefault(); $("monitor").classList.add("drag"); }));
 ["dragleave", "drop"].forEach((ev) =>
   $("monitor").addEventListener(ev, (e) => { e.preventDefault(); $("monitor").classList.remove("drag"); }));
 $("monitor").addEventListener("drop", (e) => {
+  if (window.__TAURI__) return;   // Tauri dùng drag-drop native (tauri://drag-drop)
   const f = e.dataTransfer.files[0];
   if (!f) return;
   const input = activeVideoInput();
@@ -292,6 +293,7 @@ document.querySelectorAll("#style-presets .preset")
 
 /* ---------------------------------------------------------------- actions */
 $("auto-start").onclick = () => {
+  if (window.__TAURI__) return runAutoTauri();
   const f = $("auto-video").files[0];
   if (!f) return showError("Hãy chọn một video trước.");
   const fd = new FormData();
@@ -366,3 +368,100 @@ $("clear-job").onclick = () => {
     wave.appendChild(bar);
   }
 })();
+
+/* ================================================================ Tauri bridge */
+let tauriVideo = null;    // đường dẫn video đã chọn (Tauri)
+let tauriResult = null;   // {video, srt} sau khi xong
+
+if (window.__TAURI__) {
+  const T = window.__TAURI__;
+  const basename = (p) => p.split("/").pop();
+  const stem = (name) => name.replace(/\.[^.]+$/, "");
+
+  function setVideoPreviewPath(path) {
+    const mon = $("monitor"), v = $("preview");
+    if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = null; }
+    v.src = T.core.convertFileSrc(path);
+    mon.classList.add("has-video");
+    $("vname").textContent = basename(path);
+    v.onloadedmetadata = () => { $("tc").textContent = fmtTc(v.duration); };
+  }
+
+  window.pickVideoTauri = async function () {
+    const sel = await T.dialog.open({
+      multiple: false,
+      filters: [{ name: "Video", extensions: ["mp4", "mov", "mkv", "avi", "webm", "m4v"] }],
+    });
+    if (!sel) return;
+    resetJob();
+    tauriVideo = sel;
+    setVideoPreviewPath(sel);
+  };
+
+  // kéo-thả native của Tauri (webview DnD bị vô hiệu, dùng event tauri://)
+  T.event.listen("tauri://drag-enter", () => $("monitor").classList.add("drag"));
+  T.event.listen("tauri://drag-over", () => $("monitor").classList.add("drag"));
+  T.event.listen("tauri://drag-leave", () => $("monitor").classList.remove("drag"));
+  T.event.listen("tauri://drag-drop", (e) => {
+    $("monitor").classList.remove("drag");
+    const f = e.payload && e.payload.paths && e.payload.paths[0];
+    if (!f) return;
+    resetJob();
+    tauriVideo = f;
+    setVideoPreviewPath(f);
+  });
+
+  // tiến trình: gom step giống applyStatus của web
+  function markProgress(step, percent) {
+    stepState[step] = { percent: percent == null ? 0 : percent, done: percent === 100 };
+    const names = Object.keys(stepState);
+    const maxIdx = Math.max(...names.map((n) => STEP_ORDER.indexOf(n)));
+    for (const n of names) if (STEP_ORDER.indexOf(n) < maxIdx) stepState[n].done = true;
+    renderSteps();
+  }
+  T.event.listen("progress", (e) => {
+    const { step, percent } = e.payload || {};
+    if (step) markProgress(step, percent);
+  });
+
+  window.runAutoTauri = async function () {
+    if (!tauriVideo) return showError("Hãy chọn một video trước.");
+    const btn = $("auto-start");
+    btn.disabled = true;
+    resetUI();
+    const mode = $("auto-mode").value;
+    const opts = {
+      language: $("auto-lang").value,
+      model: $("auto-model").value,
+      mode,
+      offset: $("auto-offset").value || "0",
+      style: mode === "burn" ? collectStyle() : null,
+    };
+    try {
+      tauriResult = await T.core.invoke("run_auto", { path: tauriVideo, opts });
+      for (const k in stepState) stepState[k].done = true;
+      renderSteps();
+      $("result").classList.remove("hidden");
+    } catch (err) {
+      showError(String(err && err.message ? err.message : err));
+    }
+    btn.disabled = false;
+  };
+
+  // Tải về: mở hộp thoại lưu, copy file kết quả ra chỗ user chọn (<tên gốc>_sub.<đuôi>)
+  async function saveTauri(kind) {
+    if (!tauriResult) return;
+    const src = kind === "video" ? tauriResult.video : tauriResult.srt;
+    const base = tauriVideo ? stem(basename(tauriVideo)) : "video";
+    const ext = src.split(".").pop();
+    const dest = await T.dialog.save({ defaultPath: `${base}_sub.${ext}` });
+    if (!dest) return;
+    await T.core.invoke("save_file", { src, dest });
+  }
+  $("dl-video").addEventListener("click", (e) => { e.preventDefault(); saveTauri("video"); }, true);
+  $("dl-srt").addEventListener("click", (e) => { e.preventDefault(); saveTauri("srt"); }, true);
+
+  // xoá dropzone cũng xoá đường dẫn Tauri đang giữ
+  const _origResetDropzone = resetDropzone;
+  resetDropzone = function () { tauriVideo = null; _origResetDropzone(); };
+}
