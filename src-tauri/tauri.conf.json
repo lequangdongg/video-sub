@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "AutoSub",
+  "version": "0.1.0",
+  "identifier": "com.dong.autosub",
+  "build": {
+    "frontendDist": "../webapp/static"
+  },
+  "app": {
+    "windows": [
+      { "title": "Auto Sub", "width": 1100, "height": 820, "resizable": true }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' asset: http://asset.localhost data: blob:; media-src 'self' asset: http://asset.localhost blob:; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost",
+      "assetProtocol": { "enable": true, "scope": ["**"] }
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app"],
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/icon.icns"],
+    "resources": {
+      "binaries/ffmpeg": "binaries/ffmpeg",
+      "binaries/ffprobe": "binaries/ffprobe",
+      "binaries/whisper-cli": "binaries/whisper-cli",
+      "../assets/fonts": "assets/fonts",
+      "../webapp/corrections.txt": "corrections.txt"
+    }
+  }
+}

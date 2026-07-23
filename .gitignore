@@ -23,3 +23,9 @@ tests/fixtures/*.wav
 
 # node / tailwind (app.css is a committed build artifact)
 node_modules/
+
+# tauri (binary bundle tải bằng scripts/fetch-binaries.sh; build artifacts)
+/src-tauri/binaries/
+/src-tauri/target/
+/src-tauri/gen/
+/src-tauri/icons/
