@@ -1,0 +1,5 @@
+{
+  "content": "[Script Info]\nScriptType: v4.00+\nPlayResX: 512\nPlayResY: 288\nWrapStyle: 2\nScaledBorderAndShadow: yes\n\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\nStyle: Text,UTM Avo,16,&H00FFFFFF,&H000000FF,&H00000000,&H00000000,-1,0,0,0,100,100,0,0,1,4,0,2,20,20,24,1\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\nDialogue: 0,0:00:01.00,0:00:03.00,Text,,0,0,0,,{\\p1\\an7\\pos(0,0)\\1c&H000000&\\1a&HBF&\\bord0\\shad0}m 204 242 l 307 242 307 266 204 266{\\p0}\nDialogue: 1,0:00:01.00,0:00:03.00,Text,,0,0,0,,xin chào các bạn\nDialogue: 0,0:00:03.00,0:00:08.00,Text,,0,0,0,,{\\p1\\an7\\pos(0,0)\\1c&H000000&\\1a&HBF&\\bord0\\shad0}m 36 223 l 477 223 477 266 36 266{\\p0}\nDialogue: 1,0:00:03.00,0:00:08.00,Text,,0,0,0,,đây là một câu rất dài cần xuống dòng và tách trang để kiểm tra hộp nền\\Nbăng ngang ôm sát chữ\n",
+  "width": 1920,
+  "height": 1080
+}

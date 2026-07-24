@@ -35,6 +35,30 @@ MODE="burn"              # burn (cứng) | soft (mềm) | srt (chỉ .srt)
 | `soft` | Phụ đề đính kèm, bật/tắt trong player     | ffmpeg thường       |
 | `srt`  | Chỉ xuất file `.srt`                      | —                   |
 
+## App desktop (macOS Apple Silicon) — Tauri
+
+Ngoài bản web, có bản **app desktop** đóng gói bằng Tauri v2 (lõi Rust, nhẹ, kèm sẵn
+`ffmpeg`+libass và `whisper-cli` — **không cần Homebrew/Python/cài gì**).
+
+```bash
+# lần đầu: cần Rust + tauri-cli + binary bundle
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+cargo install tauri-cli --version "^2.0.0"
+./scripts/fetch-binaries.sh        # dựng ffmpeg/ffprobe/whisper-cli vào src-tauri/binaries
+
+# chạy thử (dev)
+cd src-tauri && cargo tauri dev
+
+# đóng gói .dmg gửi cho người khác
+cd src-tauri && cargo tauri build
+./scripts/build-dmg.sh             # ký ad-hoc + tạo AutoSub_signed.dmg
+```
+
+- Mở lần đầu app tự hỏi tải model **large-v3** (~3GB); nếu máy đã có ở `~/whisper-models/` thì tự nhận.
+- Người nhận `.dmg`: chuột phải → Open lần đầu (chưa notarize) — xem [`DIST-README.md`](DIST-README.md).
+- Lõi xử lý (sinh SRT/ASS, sửa từ, align) được **port sang Rust và kiểm khớp bản Python bằng golden test**
+  (`src-tauri/tests/golden`, chạy `cargo test`). Bản web Python (`webapp/`) vẫn giữ nguyên, chạy song song.
+
 ## Cài đặt — chạy 1 lệnh
 
 Máy mới (macOS) — clone rồi cài:

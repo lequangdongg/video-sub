@@ -8,7 +8,7 @@ import shutil
 import threading
 import uuid
 
-from flask import Flask, Response, jsonify, request, send_file
+from flask import Flask, Response, jsonify, redirect, request, send_file
 
 # global single-job state (one video at a time)
 _STATE = {"busy": False}
@@ -114,7 +114,8 @@ def create_app(jobs_root: str | None = None) -> Flask:
 
     @app.get("/")
     def index():
-        return send_file(os.path.join(here, "static", "index.html"))
+        # phục vụ index dưới /static/ để asset tương đối (./app.css) khớp cả Flask lẫn Tauri
+        return redirect("/static/index.html")
 
     @app.post("/api/auto")
     def api_auto():

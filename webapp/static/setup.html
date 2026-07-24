@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cài đặt — Auto Sub</title>
+  <link rel="stylesheet" href="./app.css">
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; }
+    .setup { max-width: 520px; margin: 12vh auto; text-align: center; padding: 0 20px; }
+    .setup h1 { font-size: 28px; margin-bottom: 8px; }
+    .setup p { color: #555; line-height: 1.5; }
+    #dl { padding: 12px 22px; font-size: 16px; border: 0; border-radius: 10px;
+          background: #2563eb; color: #fff; cursor: pointer; margin-top: 8px; }
+    #dl:disabled { opacity: .55; cursor: default; }
+    #bar { display: none; margin-top: 22px; }
+    .track { height: 10px; background: #e5e7eb; border-radius: 6px; overflow: hidden; }
+    #fill { height: 100%; width: 0; background: #2563eb; transition: width .2s; }
+    #pct { margin-top: 8px; font-variant-numeric: tabular-nums; }
+    @media (prefers-color-scheme: dark) {
+      body { background:#111; color:#eee; } .setup p { color:#aaa; } .track { background:#333; }
+    }
+  </style>
+</head>
+<body>
+  <main class="setup">
+    <h1>Auto Sub</h1>
+    <p>Cần tải model nhận diện giọng nói <b>large-v3</b> (~3&nbsp;GB) trước khi dùng.
+       Chỉ tải một lần, lần sau mở app là dùng ngay.</p>
+    <button id="dl">⬇ Tải model large-v3</button>
+    <div id="bar">
+      <div class="track"><div id="fill"></div></div>
+      <p id="pct">0%</p>
+    </div>
+  </main>
+  <script src="./setup.js"></script>
+</body>
+</html>
