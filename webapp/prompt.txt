@@ -1,0 +1,25 @@
+# ==========================================================================
+#  TỪ VỰNG GỢI Ý CHO WHISPER  (initial prompt)
+# ==========================================================================
+#  Nạp vào whisper qua --prompt để "mồi" từ vựng, giúp model phát ra đúng
+#  ngay từ đầu thay vì phải sửa lại bằng corrections.txt.
+#
+#  !! QUY TẮC QUAN TRỌNG - đo bằng thực nghiệm trên large-v3 !!
+#
+#  CHỈ liệt kê từ VIẾT TẮT / TIẾNG ANH / KÝ HIỆU. Đừng thêm cụm tiếng Việt.
+#
+#  Lý do: prompt chứa nhiều cụm tiếng Việt làm model giải mã lệch dấu ở
+#  chính những từ tiếng Việt khác. Đo được: prompt có "đái tháo đường"
+#  -> model đọc ra "đáy tháo đường" (sai 3/3 lần); bỏ hết cụm tiếng Việt
+#  ra khỏi prompt -> đúng 3/3 lần, mà vẫn giữ được HbA1c, BMI.
+#
+#  Từ tiếng Việt bị nghe nhầm thì xử bằng corrections.txt, KHÔNG xử ở đây.
+#
+#  Giới hạn cứng 224 token (~400-600 ký tự). Thừa sẽ bị cắt kèm cảnh báo.
+#  Tắt hoàn toàn: xoá hết nội dung bên dưới.
+# ==========================================================================
+
+Các xét nghiệm và chỉ số: HbA1c, LDL, HDL, BMI, PCR, MRI, CT, PET-CT,
+ECG, EEG, X-quang, ADN, ARN, COVID-19, SARS-CoV-2, HIV, AIDS, WHO, CDC, FDA,
+insulin, cholesterol, triglyceride, vitamin, omega-3, probiotic, testosterone,
+estrogen, cortisol, paracetamol, ibuprofen, amoxicillin, statin, metformin.

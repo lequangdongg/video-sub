@@ -15,8 +15,15 @@ THREADS = os.environ.get("WHISPER_THREADS", "8")
 ENCODER = os.environ.get("ENCODER", "hardware")      # hardware|software
 VT_QUALITY = os.environ.get("VT_QUALITY", "60")
 X264_CRF = os.environ.get("X264_CRF", "20")
-# gợi ý từ vựng cho whisper (bias nhận diện đúng hơn); để trống là tắt
+# gợi ý từ vựng cho whisper (bias nhận diện đúng hơn); để trống là tắt.
+# Ưu tiên biến môi trường WHISPER_PROMPT; không có thì đọc WHISPER_PROMPT_FILE.
 WHISPER_PROMPT = os.environ.get("WHISPER_PROMPT", "")
+PROMPT_FILE = os.environ.get(
+    "WHISPER_PROMPT_FILE",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "prompt.txt"))
+# whisper chỉ nhận tối đa n_text_ctx/2 = 224 token. Tiếng Việt tốn nhiều token
+# nên chặn theo ký tự cho an toàn (~2.7 ký tự/token).
+PROMPT_MAX_CHARS = int(os.environ.get("WHISPER_PROMPT_MAX_CHARS", "600"))
 # từ điển sửa lỗi whisper hay nghe nhầm (mỗi dòng: sai => đúng)
 CORRECTIONS_FILE = os.environ.get(
     "CORRECTIONS_FILE",
@@ -111,6 +118,30 @@ def apply_corrections(srt_path: str) -> None:
         f.write(text)
 
 
+def _load_prompt() -> str:
+    """Từ vựng mồi cho whisper: ưu tiên env WHISPER_PROMPT, sau đó prompt.txt.
+
+    Bỏ dòng ghi chú (#), nối phần còn lại thành một dòng. Cắt bớt nếu vượt
+    PROMPT_MAX_CHARS vì whisper lặng lẽ bỏ phần thừa quá 224 token.
+    """
+    text, src = WHISPER_PROMPT, "biến môi trường WHISPER_PROMPT"
+    if not text:
+        src = PROMPT_FILE
+        try:
+            with open(PROMPT_FILE, encoding="utf-8") as f:
+                text = " ".join(ln.strip() for ln in f
+                                if ln.strip() and not ln.startswith("#"))
+        except FileNotFoundError:
+            return ""
+    text = re.sub(r"\s+", " ", text).strip()
+    if len(text) > PROMPT_MAX_CHARS:
+        cut = text.rfind(" ", 0, PROMPT_MAX_CHARS)
+        text = text[:cut if cut > 0 else PROMPT_MAX_CHARS].rstrip(" ,;")
+        print(f"[prompt] Từ vựng gợi ý dài quá {PROMPT_MAX_CHARS} ký tự, "
+              f"đã cắt còn {len(text)}. Rút gọn {src} để khỏi mất từ.")
+    return text
+
+
 def transcribe(audio: str, lang: str, model: str, srt_out: str, on_progress=None) -> None:
     mp = model_path(model)
     if not os.path.exists(mp):
@@ -119,8 +150,11 @@ def transcribe(audio: str, lang: str, model: str, srt_out: str, on_progress=None
     cmd = ["whisper-cli", "-m", mp, "-l", lang, "-t", THREADS,
            "-bs", "5", "-bo", "5", "-fa", "-pp",   # beam search 5 -> nhận diện chính xác hơn
            "-osrt", "-of", base, "-f", audio]
-    if WHISPER_PROMPT:
-        cmd += ["--prompt", WHISPER_PROMPT]
+    prompt = _load_prompt()
+    if prompt:
+        # --carry-initial-prompt: lặp lại prompt ở MỌI cửa sổ 30s, nếu không
+        # nó chỉ ảnh hưởng đoạn đầu video rồi bị context của chính nó đẩy ra.
+        cmd += ["--prompt", prompt, "--carry-initial-prompt"]
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL,
                             stderr=subprocess.PIPE, text=True)
     for line in proc.stderr:
