@@ -125,8 +125,49 @@ Whisper đôi khi nghe sai (nhất là dấu thanh, vd *nôn mửa* → *nôn m�
    thành phố hồ chí mih => Thành phố Hồ Chí Minh
    ```
    Áp dụng tự động cho mọi sub tạo mới (không phân biệt hoa/thường, giữ hoa chữ đầu).
-2. **Model `large-v3`** — chính xác hơn `turbo` cho câu khó.
-3. **Gợi ý từ vựng** (tuỳ chọn): `WHISPER_PROMPT="tên riêng, thuật ngữ hay dùng" ./web.sh` để bias nhận diện.
+   Từ điển đi kèm sẵn ~277 cặp: danh từ riêng (Địa Trung Hải, Biển Đông, Bệnh
+   viện Chợ Rẫy…), thuật ngữ y tế (chẩn đoán, đái tháo đường type 2, HbA1c…) và
+   các lỗi chính tả hay gặp.
+
+   > **Lưu ý:** luật thay thế không có ranh giới từ, nên đừng thêm từ một âm
+   > tiết (`pháp` sẽ phá `phương pháp`). Xem cảnh báo ở đầu file.
+
+2. **Gợi ý từ vựng cho whisper** — mở [`webapp/prompt.txt`](webapp/prompt.txt)
+   và liệt kê thuật ngữ hay bị sai. Nội dung được nạp qua `--prompt` +
+   `--carry-initial-prompt` để whisper **phát ra đúng ngay từ đầu**, thay vì
+   phải sửa lại sau. Hiệu quả rõ nhất với từ viết tắt / tiếng Anh:
+
+   ```
+   không prompt:  xét nghiệm HLA1 cờ ... chỉ số mi
+   có prompt:     xét nghiệm HbA1c ... chỉ số BMI
+   ```
+
+   > **Chỉ liệt kê từ viết tắt / tiếng Anh.** Đo thực nghiệm trên `large-v3`:
+   > prompt có chứa cụm tiếng Việt làm model giải mã lệch dấu — để
+   > `đái tháo đường` trong prompt thì nó đọc ra `đáy tháo đường` (sai 3/3
+   > lần). Bỏ hết cụm tiếng Việt ra thì đúng 3/3 mà vẫn giữ được `HbA1c`,
+   > `BMI`. Từ tiếng Việt sai thì xử ở `corrections.txt`.
+
+   Giới hạn cứng **224 token** (~400-600 ký tự) — thừa sẽ bị cắt và in cảnh báo.
+   Ghi đè bằng env: `WHISPER_PROMPT="..."` hoặc `WHISPER_PROMPT_FILE=...`.
+3. **Model `large-v3`** — chính xác hơn `turbo` cho câu khó.
+
+### Tự tìm lỗi thay vì đoán
+
+Máy macOS có giọng đọc tiếng Việt, nên có thể đo lỗi thật của whisper:
+
+```bash
+python3 scripts/harvest-errors.py scripts/corpus-yte.txt
+```
+
+Script đọc từng câu trong corpus thành audio, cho whisper nhận lại, áp
+`corrections.txt` rồi so với đáp án — chỗ nào còn lệch chính là ứng viên để
+thêm vào từ điển, kèm ngữ cảnh. Nó tự bỏ qua chênh lệch không phải lỗi
+(chữ số, và lối đặt dấu `hòa`/`hoà` vốn đều hợp lệ).
+
+Thay `scripts/corpus-yte.txt` bằng câu trong lĩnh vực của bạn để đo cho đúng
+chủ đề. Lưu ý giọng TTS không giống hệt giọng người thật — kết quả là gợi ý,
+vẫn nên xem lại trước khi chép vào từ điển.
 
 ## Tăng tốc cho video lớn (vài GB)
 
