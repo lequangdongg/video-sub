@@ -1,6 +1,474 @@
-# Từ điển sửa lỗi nhận diện (whisper hay nghe nhầm tiếng Việt).
-# Mỗi dòng:  <cụm sai> => <cụm đúng>
-# Dòng bắt đầu bằng # là ghi chú. Không phân biệt hoa/thường; tự giữ hoa chữ đầu câu.
-# Thêm dòng mới cho bất kỳ từ nào bị sai lặp lại.
+# ==========================================================================
+#  TỪ ĐIỂN SỬA LỖI NHẬN DIỆN (whisper hay nghe nhầm / không viết hoa)
+# ==========================================================================
+#  Cú pháp:  <cụm sai>  =>  <cụm đúng>
+#  - Dòng bắt đầu bằng #  là ghi chú, bị bỏ qua.
+#  - So khớp KHÔNG phân biệt hoa/thường, nên vế trái viết thường là đủ.
+#  - Nếu cụm khớp đứng đầu câu (chữ đầu viết hoa) thì chữ đầu của vế phải
+#    cũng được viết hoa tự động. Vì vậy "châu âu => châu Âu" vẫn cho ra
+#    "Châu Âu" khi nằm đầu câu.
+#
+#  !! CẢNH BÁO QUAN TRỌNG - đọc trước khi thêm dòng mới !!
+#  Việc thay thế KHÔNG có ranh giới từ (word boundary): cụm nào cũng bị
+#  tìm như chuỗi con. Vì vậy TUYỆT ĐỐI KHÔNG thêm các từ một âm tiết:
+#      pháp  -> sẽ phá "phương pháp"       đức -> sẽ phá "đạo đức"
+#      anh   -> sẽ phá "anh ấy"            nga -> sẽ phá "ngang", "ngan"
+#      úc    -> sẽ phá "thúc", "cúc"       huế -> sẽ phá "thuế"
+#  Với những từ đó hãy dùng cụm dài hơn: "nước pháp => nước Pháp".
+# ==========================================================================
 
+
+# --------------------------------------------------------------------------
+# 1. BIỂN, ĐẠI DƯƠNG, CHÂU LỤC, ĐỊA DANH THẾ GIỚI
+# --------------------------------------------------------------------------
+địa trung hải => Địa Trung Hải
+thái bình dương => Thái Bình Dương
+đại tây dương => Đại Tây Dương
+ấn độ dương => Ấn Độ Dương
+bắc băng dương => Bắc Băng Dương
+biển đông => Biển Đông
+biển đỏ => Biển Đỏ
+biển đen => Biển Đen
+biển chết => Biển Chết
+hắc hải => Hắc Hải
+vịnh bắc bộ => vịnh Bắc Bộ
+vịnh ba tư => vịnh Ba Tư
+vịnh mexico => vịnh Mexico
+kênh đào suez => kênh đào Suez
+kênh đào panama => kênh đào Panama
+eo biển malacca => eo biển Malacca
+châu âu => châu Âu
+châu á => châu Á
+châu phi => châu Phi
+châu mỹ => châu Mỹ
+châu đại dương => châu Đại Dương
+châu nam cực => châu Nam Cực
+bắc cực => Bắc Cực
+nam cực => Nam Cực
+đông nam á => Đông Nam Á
+đông bắc á => Đông Bắc Á
+trung đông => Trung Đông
+bắc phi => Bắc Phi
+himalaya => Himalaya
+everest => Everest
+sahara => Sahara
+amazon => Amazon
+balkan => Balkan
+mê kông => Mê Kông
+sông hồng => sông Hồng
+cửu long => Cửu Long
+trường sơn => Trường Sơn
+trường sa => Trường Sa
+hoàng sa => Hoàng Sa
+
+
+# --------------------------------------------------------------------------
+# 2. QUỐC GIA, VÙNG LÃNH THỔ, TỔ CHỨC
+#    (chỉ những cụm từ 2 âm tiết trở lên - xem cảnh báo ở đầu file)
+# --------------------------------------------------------------------------
+việt nam => Việt Nam
+trung quốc => Trung Quốc
+nhật bản => Nhật Bản
+hàn quốc => Hàn Quốc
+triều tiên => Triều Tiên
+thái lan => Thái Lan
+campuchia => Campuchia
+cam pu chia => Campuchia
+malaysia => Malaysia
+indonesia => Indonesia
+philippines => Philippines
+singapore => Singapore
+myanmar => Myanmar
+đài loan => Đài Loan
+hồng kông => Hồng Kông
+ấn độ => Ấn Độ
+hoa kỳ => Hoa Kỳ
+nước mỹ => nước Mỹ
+người mỹ => người Mỹ
+vương quốc anh => Vương quốc Anh
+nước anh => nước Anh
+nước pháp => nước Pháp
+nước đức => nước Đức
+nước nga => nước Nga
+nước úc => nước Úc
+liên bang nga => Liên bang Nga
+canada => Canada
+brazil => Brazil
+mexico => Mexico
+argentina => Argentina
+new zealand => New Zealand
+ai cập => Ai Cập
+israel => Israel
+thổ nhĩ kỳ => Thổ Nhĩ Kỳ
+ả rập xê út => Ả Rập Xê Út
+tây ban nha => Tây Ban Nha
+bồ đào nha => Bồ Đào Nha
+hà lan => Hà Lan
+thụy sĩ => Thụy Sĩ
+thụy điển => Thụy Điển
+đan mạch => Đan Mạch
+na uy => Na Uy
+phần lan => Phần Lan
+ba lan => Ba Lan
+hy lạp => Hy Lạp
+la mã => La Mã
+ukraine => Ukraine
+liên hợp quốc => Liên Hợp Quốc
+liên minh châu âu => Liên minh châu Âu
+
+
+# --------------------------------------------------------------------------
+# 3. ĐỊA DANH VIỆT NAM
+# --------------------------------------------------------------------------
+hà nội => Hà Nội
+sài gòn => Sài Gòn
+thành phố hồ chí minh => Thành phố Hồ Chí Minh
+hồ chí minh => Hồ Chí Minh
+đà nẵng => Đà Nẵng
+hải phòng => Hải Phòng
+cần thơ => Cần Thơ
+nha trang => Nha Trang
+đà lạt => Đà Lạt
+vũng tàu => Vũng Tàu
+hạ long => Hạ Long
+phú quốc => Phú Quốc
+sa pa => Sa Pa
+hội an => Hội An
+quy nhơn => Quy Nhơn
+buôn ma thuột => Buôn Ma Thuột
+tây nguyên => Tây Nguyên
+bắc ninh => Bắc Ninh
+quảng ninh => Quảng Ninh
+quảng nam => Quảng Nam
+nghệ an => Nghệ An
+thanh hóa => Thanh Hóa
+bình dương => Bình Dương
+đồng nai => Đồng Nai
+an giang => An Giang
+kiên giang => Kiên Giang
+
+
+# ==========================================================================
+# 4. Y TẾ - TỔ CHỨC, CƠ SỞ, TÊN RIÊNG
+# ==========================================================================
+tổ chức y tế thế giới => Tổ chức Y tế Thế giới
+bộ y tế => Bộ Y tế
+sở y tế => Sở Y tế
+bệnh viện bạch mai => Bệnh viện Bạch Mai
+bệnh viện chợ rẫy => Bệnh viện Chợ Rẫy
+bệnh viện việt đức => Bệnh viện Việt Đức
+bệnh viện từ dũ => Bệnh viện Từ Dũ
+bệnh viện nhi trung ương => Bệnh viện Nhi Trung ương
+bạch mai => Bạch Mai
+chợ rẫy => Chợ Rẫy
+từ dũ => Từ Dũ
+đại học y hà nội => Đại học Y Hà Nội
+đại học y dược => Đại học Y Dược
+viện pasteur => Viện Pasteur
+pasteur => Pasteur
+hippocrates => Hippocrates
+
+
+# --------------------------------------------------------------------------
+# 5. Y TẾ - BỆNH / HỘI CHỨNG MANG TÊN RIÊNG
+# --------------------------------------------------------------------------
+alzheimer => Alzheimer
+parkinson => Parkinson
+basedow => Basedow
+crohn => Crohn
+kawasaki => Kawasaki
+hội chứng down => hội chứng Down
+hội chứng turner => hội chứng Turner
+hội chứng marfan => hội chứng Marfan
+ebola => Ebola
+zika => Zika
+dengue => Dengue
+covid => COVID
+covid 19 => COVID-19
+covid-19 => COVID-19
+sars-cov-2 => SARS-CoV-2
+sars cov 2 => SARS-CoV-2
+sars => SARS
+mers => MERS
+hiv => HIV
+aids => AIDS
+
+
+# --------------------------------------------------------------------------
+# 6. Y TẾ - XÉT NGHIỆM, CHẨN ĐOÁN HÌNH ẢNH, VIẾT TẮT
+# --------------------------------------------------------------------------
+x quang => X-quang
+x-quang => X-quang
+xquang => X-quang
+chụp ct => chụp CT
+mri => MRI
+pet ct => PET-CT
+xét nghiệm pcr => xét nghiệm PCR
+pcr => PCR
+adn => ADN
+arn => ARN
+ecg => ECG
+eeg => EEG
+bmi => BMI
+hba1c => HbA1c
+ldl => LDL
+hdl => HDL
+psa => PSA
+cdc => CDC
+fda => FDA
+unicef => UNICEF
+
+
+# ==========================================================================
+# 7. CHÍNH TẢ CHUẨN HOÁ  (AN TOÀN - vế trái không bao giờ là dạng viết đúng)
+#    Whisper hay viết theo âm nghe được, ra các dạng sai chính tả dưới đây.
+# ==========================================================================
 nôn mưởng => nôn mửa
+sảy ra => xảy ra
+sử lý => xử lý
+chia sẽ => chia sẻ
+bổ xung => bổ sung
+xúc tích => súc tích
+cọ sát => cọ xát
+sơ xuất => sơ suất
+khoảng khắc => khoảnh khắc
+sáng lạng => xán lạn
+sát nhập => sáp nhập
+thăm quan => tham quan
+tựu chung => tựu trung
+vô hình chung => vô hình trung
+trau truốt => trau chuốt
+dành giật => giành giật
+dành chiến thắng => giành chiến thắng
+che dấu => che giấu
+chín mùi => chín muồi
+đường xá => đường sá
+xuất xắc => xuất sắc
+
+
+# --------------------------------------------------------------------------
+# 7b. CHÍNH TẢ Y TẾ  (an toàn - rất hay gặp trong video sức khoẻ)
+# --------------------------------------------------------------------------
+chuẩn đoán => chẩn đoán
+bác sỹ => bác sĩ
+y sỹ => y sĩ
+dược sỹ => dược sĩ
+đột quị => đột quỵ
+# "đái tháo đường" - whisper sai được CẢ HAI âm tiết đầu (đáy tháu đường),
+# nên chuẩn hoá cụm 2 âm tiết "đái tháo" thay vì liệt kê đủ 3 âm tiết.
+# Mọi vế trái dưới đây đều là chuỗi vô nghĩa -> an toàn tuyệt đối.
+# Cũng sửa luôn cho "đái tháo nhạt".
+đáy tháo => đái tháo
+đáy tháu => đái tháo
+đáy thấu => đái tháo
+đáy thảo => đái tháo
+đáy thao => đái tháo
+đài tháo => đái tháo
+đài tháu => đái tháo
+đài thấu => đái tháo
+đái tháu => đái tháo
+đái thấu => đái tháo
+đái thảo => đái tháo
+đái thao => đái tháo
+# ("đại thảo" KHÔNG được rút gọn vì có cụm thật "đại thảo nguyên")
+đại tháo đường => đái tháo đường
+đại thảo đường => đái tháo đường
+đại thấu đường => đái tháo đường
+# đuôi "đường"
+đái tháo đương => đái tháo đường
+đái tháo đưỡng => đái tháo đường
+đái tháo đướng => đái tháo đường
+mụ côc => ngũ cốc
+mụ cốc => ngũ cốc
+ngủ cốc => ngũ cốc
+ngu cốc => ngũ cốc
+ngũ côc => ngũ cốc
+ngũ cóc => ngũ cốc
+# "mũ cốc": vế trái gần như vô nghĩa, TRỪ cụm hiếm "mũ cốc-tai" (mũ cocktail).
+# Dùng 2 tầng như mục 10: đổi hết rồi hoàn tác đúng ca đó.
+mũ cốc => ngũ cốc
+ngũ cốc-tai => mũ cốc-tai
+ngũ cốc tai => mũ cốc tai
+nguyên hạc => nguyên hạt
+cá mỏi => cá mòi
+đường phấu => đường phố
+
+
+# ==========================================================================
+# 8. THUẬT NGỮ CHUẨN HOÁ THEO Ý BẠN
+#    Whisper viết "tuýp/típ", ta chuẩn hoá về "type"; và dùng thuật ngữ
+#    y khoa "đái tháo đường" thay cho cách nói thường "tiểu đường".
+# ==========================================================================
+tiểu đường tái 1 => đái tháo đường type 1
+tiểu đường tái 2 => đái tháo đường type 2
+đái tháo đường tái 1 => đái tháo đường type 1
+đái tháo đường tái 2 => đái tháo đường type 2
+tiểu đường tiếp 1 => đái tháo đường type 1
+tiểu đường tiếp 2 => đái tháo đường type 2
+đái tháo đường tiếp 1 => đái tháo đường type 1
+đái tháo đường tiếp 2 => đái tháo đường type 2
+tiểu đường tuýp 1 => đái tháo đường type 1
+tiểu đường tuýp 2 => đái tháo đường type 2
+tiểu đường típ 1 => đái tháo đường type 1
+tiểu đường típ 2 => đái tháo đường type 2
+tiểu đường týp 1 => đái tháo đường type 1
+tiểu đường týp 2 => đái tháo đường type 2
+tiểu đường loại 1 => đái tháo đường type 1
+tiểu đường loại 2 => đái tháo đường type 2
+tiểu đường type 1 => đái tháo đường type 1
+tiểu đường type 2 => đái tháo đường type 2
+đái tháo đường tuýp 1 => đái tháo đường type 1
+đái tháo đường tuýp 2 => đái tháo đường type 2
+đái tháo đường típ 1 => đái tháo đường type 1
+đái tháo đường típ 2 => đái tháo đường type 2
+đái tháo đường týp 1 => đái tháo đường type 1
+đái tháo đường týp 2 => đái tháo đường type 2
+đái tháo đường loại 1 => đái tháo đường type 1
+đái tháo đường loại 2 => đái tháo đường type 2
+
+# Bỏ dấu # dòng dưới nếu muốn MỌI chỗ "tiểu đường" đều thành "đái tháo đường"
+# (kể cả khi đứng một mình, không kèm type):
+#   tiểu đường => đái tháo đường
+
+
+# ==========================================================================
+# 9. NGHE NHẦM THEO NGỮ CẢNH
+#    !! CẨN THẬN !! Vế trái ở đây LÀ từ tiếng Việt có thật. Chỉ bật những
+#    dòng đúng với chủ đề video của bạn, nếu không sẽ sửa nhầm câu đúng.
+#    Ví dụ: "cá mồi" (mồi câu) là từ có thật; chỉ nên bật khi video nói về
+#    cá mòi (loài cá / đồ hộp) chứ không nói về chuyện câu cá.
+# ==========================================================================
+cá mồi => cá mòi
+
+# Các dòng dưới đây đang TẮT. Bỏ dấu # ở đầu để bật khi cần:
+#   vắc xin => vaccine
+#   vac xin => vaccine
+#   pa ra xê ta môn => paracetamol
+
+
+# ==========================================================================
+# 10. "về vi khuẩn" -> "hệ vi khuẩn"  (CƠ CHẾ 2 TẦNG - đọc kỹ trước khi sửa)
+#
+#  Vấn đề: "về vi khuẩn" là cụm ĐÚNG trong "nói về vi khuẩn", "tìm hiểu về
+#  vi khuẩn"... Nếu thay tất cả sẽ hỏng thành "nói hệ vi khuẩn".
+#
+#  Cách làm:
+#    Tầng 1 - đổi TẤT CẢ "về vi khuẩn" thành "hệ vi khuẩn".
+#    Tầng 2 - HOÀN TÁC ở những chỗ phía trước là động từ/danh từ đi với "về"
+#             (nói, bàn, tìm hiểu, kiến thức...). Vì "nói hệ vi khuẩn" là
+#             cụm vô nghĩa nên hoàn tác luôn an toàn.
+#
+#  Muốn thêm ngoại lệ: chép một dòng ở tầng 2 rồi đổi từ đứng trước.
+# ==========================================================================
+
+# --- Tầng 1 ---------------------------------------------------------------
+về vi khuẩn => hệ vi khuẩn
+
+# --- Tầng 2: hoàn tác --------------------------------------------------
+nói hệ vi khuẩn => nói về vi khuẩn
+nói chuyện hệ vi khuẩn => nói chuyện về vi khuẩn
+bàn hệ vi khuẩn => bàn về vi khuẩn
+bàn luận hệ vi khuẩn => bàn luận về vi khuẩn
+thảo luận hệ vi khuẩn => thảo luận về vi khuẩn
+trao đổi hệ vi khuẩn => trao đổi về vi khuẩn
+tranh luận hệ vi khuẩn => tranh luận về vi khuẩn
+kể hệ vi khuẩn => kể về vi khuẩn
+viết hệ vi khuẩn => viết về vi khuẩn
+đọc hệ vi khuẩn => đọc về vi khuẩn
+học hệ vi khuẩn => học về vi khuẩn
+hỏi hệ vi khuẩn => hỏi về vi khuẩn
+biết hệ vi khuẩn => biết về vi khuẩn
+nghĩ hệ vi khuẩn => nghĩ về vi khuẩn
+hiểu hệ vi khuẩn => hiểu về vi khuẩn
+tìm hiểu hệ vi khuẩn => tìm hiểu về vi khuẩn
+nghiên cứu hệ vi khuẩn => nghiên cứu về vi khuẩn
+giới thiệu hệ vi khuẩn => giới thiệu về vi khuẩn
+chia sẻ hệ vi khuẩn => chia sẻ về vi khuẩn
+đề cập hệ vi khuẩn => đề cập về vi khuẩn
+quan tâm hệ vi khuẩn => quan tâm về vi khuẩn
+lo lắng hệ vi khuẩn => lo lắng về vi khuẩn
+thông tin hệ vi khuẩn => thông tin về vi khuẩn
+kiến thức hệ vi khuẩn => kiến thức về vi khuẩn
+hiểu biết hệ vi khuẩn => hiểu biết về vi khuẩn
+tài liệu hệ vi khuẩn => tài liệu về vi khuẩn
+sách hệ vi khuẩn => sách về vi khuẩn
+bài hệ vi khuẩn => bài về vi khuẩn
+video hệ vi khuẩn => video về vi khuẩn
+clip hệ vi khuẩn => clip về vi khuẩn
+chuyện hệ vi khuẩn => chuyện về vi khuẩn
+phần hệ vi khuẩn => phần về vi khuẩn
+chương hệ vi khuẩn => chương về vi khuẩn
+khái niệm hệ vi khuẩn => khái niệm về vi khuẩn
+quan điểm hệ vi khuẩn => quan điểm về vi khuẩn
+ý kiến hệ vi khuẩn => ý kiến về vi khuẩn
+báo cáo hệ vi khuẩn => báo cáo về vi khuẩn
+sự thật hệ vi khuẩn => sự thật về vi khuẩn
+
+
+# ==========================================================================
+# 11. LỖI ĐO ĐƯỢC TỪ WHISPER THẬT
+#     Sinh bằng: python3 scripts/harvest-errors.py scripts/corpus-yte.txt
+#     (đọc corpus y tế bằng giọng TTS -> whisper nhận lại -> so với đáp án)
+#     Chỉ giữ những cặp mà VẾ TRÁI là chuỗi vô nghĩa -> an toàn tuyệt đối.
+# ==========================================================================
+huyết ác => huyết áp
+huyết áp tâm chương => huyết áp tâm trương
+rối loạn li tiết => rối loạn lipid
+bệnh gó hút => bệnh gout
+lắng động => lắng đọng
+xuy thận => suy thận
+sơ gan => xơ gan
+viêm gan bờ => viêm gan B
+viêm gan cờ => viêm gan C
+dạ dài => dạ dày
+tắc ngẽn => tắc nghẽn
+khó khè => khò khè
+thiếu sắc => thiếu sắt
+da xanh sao => da xanh xao
+tuyến rác => tuyến giáp
+tuyến giác => tuyến giáp
+loáng xương => loãng xương
+gãi cổ xương đùi => gãy cổ xương đùi
+đánh chống ngực => đánh trống ngực
+sốt cân => sụt cân
+tờ bì => tê bì
+tờ tai => tê tay
+mề đai => mề đay
+sấm màu => sẫm màu
+đút sống => đốt sống
+vai gái => vai gáy
+phát đồ => phác đồ
+chụp các lớp => chụp cắt lớp
+tay biến mạch máu => tai biến mạch máu
+dầu oleo => dầu ô liu
+điện tâm đổ => điện tâm đồ
+hốt thuốc lá => hút thuốc lá
+tara-ketamol => paracetamol
+tara ketamol => paracetamol
+trợ giấy => Chợ Rẫy
+lơl => LDL
+hơl => HDL
+maze => magie
+
+# --- bạn báo thêm ---------------------------------------------------------
+mạng tính => mạn tính
+chất sơ => chất xơ
+đơn lẽ => đơn lẻ
+quả ốc chó => quả óc chó
+hạt ốc chó => hạt óc chó
+nhân ốc chó => nhân óc chó
+dầu ốc chó => dầu óc chó
+# (để "ốc chó" trần thì gõ thêm dòng: ốc chó => óc chó)
+
+# --- đợt đo thứ hai -------------------------------------------------------
+cường rác => cường giáp
+run tai => run tay
+phác đổ => phác đồ
+sa sốt trí tuệ => sa sút trí tuệ
+tiêu chải => tiêu chảy
+tiêu chảy sen => tiêu chảy xen
+rối loạn điện dài => rối loạn điện giải
+nghiệm phát => nghiệm pháp
+hoá mắt => hoa mắt
+canxi, sát, kém => canxi, sắt, kẽm
+ngủ đủ bãi => ngủ đủ bảy
