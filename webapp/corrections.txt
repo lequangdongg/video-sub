@@ -454,11 +454,11 @@ maze => magie
 mạng tính => mạn tính
 chất sơ => chất xơ
 đơn lẽ => đơn lẻ
-quả ốc chó => quả óc chó
-hạt ốc chó => hạt óc chó
-nhân ốc chó => nhân óc chó
-dầu ốc chó => dầu óc chó
-# (để "ốc chó" trần thì gõ thêm dòng: ốc chó => óc chó)
+# "ốc chó" trần: phủ mọi ngữ cảnh (ăn ốc chó, quả ốc chó, ốc chó đứng một
+# mình...). Không có loài ốc nào tên "ốc chó" nên không đụng câu đúng.
+ốc chó => óc chó
+óc tró => óc chó
+ốc tró => óc chó
 
 # --- đợt đo thứ hai -------------------------------------------------------
 cường rác => cường giáp
